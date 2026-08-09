@@ -1,0 +1,15 @@
+{
+  "task": "Create the file ./examples/smoke-proof.txt containing exactly one line: MAYFLY_SMOKE_OK",
+  "done_when": {
+    "type": "command",
+    "run": "grep -qx MAYFLY_SMOKE_OK examples/smoke-proof.txt",
+    "expect_exit": 0
+  },
+  "harness": "exec",
+  "cwd": ".",
+  "ttl": "5m",
+  "constraints": {
+    "no_spawn": true,
+    "paths_allow": ["examples/"]
+  }
+}

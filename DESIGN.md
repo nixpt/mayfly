@@ -129,11 +129,16 @@ expire(child) -> ExitReport
 
 | harness | spawn sketch |
 |---------|----------------|
-| `claude` | `claude -p "$(cat prompt)" --output-format text` |
-| `cursor` | `cursor-agent -p --yolo --trust "$(cat prompt)"` |
-| `codex` | `codex exec --full-auto --skip-git-repo-check "$(cat prompt)"` |
-| `cece` | `cece-rs …` (fleet-local) |
+| `claude` | `claude -p … --output-format text --dangerously-skip-permissions` |
+| `ccf` | same argv as `claude`; expects fleet `ccf`/flownet Anthropic env |
+| `cursor` | `cursor-agent -p --yolo --trust …` |
+| `codex` | `codex exec --sandbox workspace-write --skip-git-repo-check …` |
+| `cxf` | `codex --profile flownet exec …` (+ `FLOWNET_TOKEN_CODEX`; fleet `cxf` shape) |
+| `cece` | `cece-rs -w <cwd> -p … --afk --output-format text` |
+| `opencode` | `opencode run --format json --auto --dir <cwd> …` |
 | `exec` | no LLM — run `done_when.command` only (dry sanity) |
+
+Live smoke: `./scripts/smoke-harness.sh <harness>` (see README matrix for last-verified dates).
 
 Adapters never interpret the task. mayfly owns policy; adapters own argv.
 

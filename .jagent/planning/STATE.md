@@ -1,33 +1,29 @@
 # Planning state — mayfly
 
 **Updated:** 2026-08-09
-**Milestone focus:** M1 done → M2 live adapters
-**Branch:** `main` @ origin (nixpt/mayfly public)
+**Milestone focus:** M2 done → M3 aging inject (MAYFLY-2)
+**Branch:** `agent/cursor/MAYFLY-3`
 
 ## Delivery snapshot
 
 | Track | Status | Notes |
 |-------|--------|--------|
 | CLI surface | **shipped** | validate / hatch / status / expire / list |
-| Task schema | **shipped** | `schemas/task.schema.json` + `MayflyTask` |
-| Fuzziness gate | **shipped** | vague verbs / multi-goal / TTL>2h rejected |
-| TTL + aging states | **shipped** | alive → aging → narrowing → expired |
-| Adapters | **partial** | exec + cursor live-tested; claude/codex argv only |
-| Rename / IP scrub | **shipped** | mayfly tone |
-| `.dejavue` / `.jagent` / bump-version | **shipped** | |
-| buckets worktree isolation | **shipped** | MAYFLY-1 — `--worktree` / `--keep-worktree` |
-| flame/firefly | **held** | different layer; do not duplicate |
-| Live claude/codex smoke | **open** | MAYFLY-3 |
+| buckets worktree | **shipped** | MAYFLY-1 |
+| Live adapters | **shipped** | MAYFLY-3 — cursor OK; claude/codex honest auth fails |
+| Release | **shipped** | MAYFLY-4 — public remote + v0.1.0 |
+| Aging inject | **open** | MAYFLY-2 |
+| flame/firefly | **held** | |
 
 ## Active work
 
-Next: MAYFLY-3 (claude/codex live), MAYFLY-4 (v0.1.0 tag).
+Closing MAYFLY-3. Next open: MAYFLY-2 (aging inject).
 
 ## Blockers
 
-_None known._
+Claude OAuth / Codex API key on this box — not a mayfly bug; smokes fail honestly.
 
 ## Metrics
 
 - Unit tests: 4 passing
-- Manual: exec, TTL expire, cursor hatch, buckets worktree e2e verified
+- Smoke: cursor OK; claude OAuth expired; codex 401

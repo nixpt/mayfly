@@ -3,15 +3,20 @@ use crate::task::MayflyTask;
 use anyhow::Result;
 use std::path::Path;
 
-pub struct Claude;
+/// Claude via the fleet `ccf` shape: same argv as `claude`, expects flownet env
+/// (`ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` / `FLOWNET_TOKEN_CLAUDE`).
+///
+/// `ccf` is a shell function; export its env before hatching, or use a login shell
+/// that defines `ccf` and wrap externally. This harness just selects the claude
+/// headless flags known to work under that env.
+pub struct Ccf;
 
-impl Adapter for Claude {
+impl Adapter for Ccf {
     fn name(&self) -> &'static str {
-        "claude"
+        "ccf"
     }
 
     fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan> {
-        // Align with squadron/bin/agent-launch claude runner: headless -p + skip perms.
         let prompt = super::read_prompt(prompt_path)?;
         Ok(SpawnPlan {
             harness: self.name().into(),

@@ -76,13 +76,40 @@ See [`DESIGN.md`](DESIGN.md) for the full contract (aging ladder, adapters, fuzz
 
 ## Harnesses
 
-| id | adapter |
-|----|---------|
-| `claude` | Claude Code CLI |
-| `cursor` | `cursor-agent` |
-| `codex` | OpenAI Codex CLI |
-| `cece` | fleet `cece-rs` (stub) |
-| `exec` | no LLM — run `done_when` only |
+| id | adapter | last live smoke (this box) |
+|----|---------|----------------------------|
+| `claude` | `claude -p … --dangerously-skip-permissions` | OAuth expired without flownet env |
+| `ccf` | same as `claude` (expects `ccf`/flownet Anthropic env) | 2026-08-09 — **OK** |
+| `cursor` | `cursor-agent -p --yolo --trust` | 2026-08-09 — **OK** |
+| `codex` | `codex exec --sandbox workspace-write …` | 401 without flownet profile |
+| `cxf` | `codex --profile flownet exec …` (+ `FLOWNET_TOKEN_CODEX`) | 2026-08-09 — **OK** |
+| `cece` | `cece-rs -w … -p … --afk` | argv OK; 402 budget exhausted |
+| `opencode` | `opencode run --auto --dir …` [`MAYFLY_OPENCODE_MODEL`] | 2026-08-09 — **OK** with `opencode/big-pickle` (own provider; default config often hits flownet) |
+| `exec` | `sh -c <done_when>` | 2026-08-09 — **OK** |
+
+Fleet wrappers `ccf` / `cxf` are shell functions; export their env (or run under a login zsh that defines them) before `mayfly hatch` with harness `ccf`/`cxf`.
+
+Optional smoke (needs `jq` + harness on PATH):
+
+```bash
+cargo build --release
+MAYFLY_BIN=/build/release/mayfly ./scripts/smoke-harness.sh cursor
+MAYFLY_BIN=/build/release/mayfly ./scripts/smoke-harness.sh cxf   # needs FLOWNET_TOKEN_CODEX
+MAYFLY_BIN=/build/release/mayfly ./scripts/smoke-harness.sh ccf   # needs ANTHROPIC_* flownet env
+```
+
+Missing harness binaries error clearly (`harness '…' binary … not found on PATH`) instead of hanging.
+
+## Fleet usage (horse → mayfly)
+
+From a dispatched horse or any shell with `buckets` + `mayfly` on PATH:
+
+```bash
+mayfly hatch /path/to/task.json --worktree "$REPO"
+# provisions sibling worktree via buckets, runs harness, tears down with --force
+```
+
+Prefer mechanical `done_when` + TTL ≤ 2h. Durable multi-step work stays on horses/`agent-launch`.
 
 ## Relationship to the fleet
 

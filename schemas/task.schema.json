@@ -41,7 +41,7 @@
     },
     "harness": {
       "type": "string",
-      "enum": ["claude", "cursor", "codex", "cece", "exec"]
+      "enum": ["claude", "ccf", "cursor", "codex", "cxf", "cece", "opencode", "exec"]
     },
     "cwd": { "type": "string", "default": "." },
     "ttl": {

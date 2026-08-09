@@ -54,9 +54,14 @@ impl DoneWhen {
 #[serde(rename_all = "lowercase")]
 pub enum Harness {
     Claude,
+    /// Claude under fleet `ccf` env (flownet Anthropic-compat).
+    Ccf,
     Cursor,
     Codex,
+    /// Codex under fleet `cxf` shape (`--profile flownet` + FLOWNET_TOKEN_CODEX).
+    Cxf,
     Cece,
+    Opencode,
     Exec,
 }
 
@@ -64,9 +69,12 @@ impl std::fmt::Display for Harness {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Harness::Claude => "claude",
+            Harness::Ccf => "ccf",
             Harness::Cursor => "cursor",
             Harness::Codex => "codex",
+            Harness::Cxf => "cxf",
             Harness::Cece => "cece",
+            Harness::Opencode => "opencode",
             Harness::Exec => "exec",
         };
         write!(f, "{s}")

@@ -13,3 +13,7 @@
 .dejavue/embedder_circuit.json
 .dejavue/timeline.jsonl.bak-*
 
+
+# local agent DBs (cece/joker may create these in-repo)
+.jagent/*.db
+.jagent/*.db-*

@@ -3,7 +3,7 @@ use crate::task::MayflyTask;
 use anyhow::Result;
 use std::path::Path;
 
-/// Fleet-local cece-rs adapter (stub argv; refine when wiring to live binary).
+/// Fleet `cece-rs` headless dispatch (`-p` / `--afk`).
 pub struct Cece;
 
 impl Adapter for Cece {
@@ -12,12 +12,18 @@ impl Adapter for Cece {
     }
 
     fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan> {
+        let prompt = super::read_prompt(prompt_path)?;
         Ok(SpawnPlan {
             harness: self.name().into(),
             program: "cece-rs".into(),
             args: vec![
-                "--prompt-file".into(),
-                prompt_path.display().to_string(),
+                "-w".into(),
+                task.cwd.clone(),
+                "-p".into(),
+                prompt,
+                "--afk".into(),
+                "--output-format".into(),
+                "text".into(),
             ],
             cwd: Path::new(&task.cwd).to_path_buf(),
             prompt_path: prompt_path.to_path_buf(),
