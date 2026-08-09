@@ -29,3 +29,14 @@ Rejected alternatives:
 - **always poll done_when unboundedly**: TTL starvation
 - **no mid-flight done_when checks for LLM harnesses**: loses early-cease
 
+
+## 2026-08-09T00:14:26-05:00 — Use public buckets worktree for hatch isolation; hold flame/firefly
+
+Reason:
+buckets is published and already the fleet throwaway-workspace primitive (kitchen sits on it). Flame/firefly own heat/brands/fuel — a different layer; wrapping harnesses in firefly spark would duplicate and fight host auth/network needs.
+
+Rejected alternatives:
+- **kitchen enter/clean**: horse ship/PR lifecycle; refuse-dirty fights mayfly --force teardown
+- **firefly spark as hatch sandbox**: wrong product boundary; mayfly is the agent loop outside the room
+- **reimplement git worktree inside mayfly**: would fork buckets
+

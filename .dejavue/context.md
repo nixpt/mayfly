@@ -13,7 +13,8 @@ dcp: DCP/1.0
 ## Operating Rules
 
 - Self-contained: no path deps on peer projects (same posture as `buckets`).
-- Mom's kitchen: never hatch into a shared source checkout; caller provides a worktree/`cwd`.
+- Hatch cwd isolation via public `buckets worktree` (`--worktree <repo>`), not flame/firefly.
+- Mom's kitchen: prefer `--worktree`; warn on primary source checkouts.
 - Vague tasks are rejected at validate — bad task design is a mayfly bug, not a harness bug.
 - Workers must not hatch other mayflies (`constraints.no_spawn`).
 - Ticket IDs: `MAYFLY-NN`. Work on `agent/<name>/MAYFLY-NN` branches in worktrees.

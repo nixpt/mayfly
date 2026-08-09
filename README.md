@@ -43,11 +43,18 @@ mayfly validate examples/fix-test.json
 # Hatch (dry-run prints the plan; omit --dry-run to launch)
 mayfly hatch examples/fix-test.json --dry-run
 
+# Hatch into a throwaway git worktree (public nixpt/buckets — on PATH)
+mayfly hatch examples/fix-test.json --worktree /path/to/repo
+mayfly hatch examples/fix-test.json --worktree . --branch mayfly/demo --keep-worktree
+
 # Watch / force end
 mayfly status <id>
 mayfly expire <id>
 mayfly list
 ```
+
+`--worktree` shells out to `buckets worktree create/remove` (no crates.io path-dep).
+Flame/firefly are intentionally not used for hatch cwd — different layer.
 
 ### Task file (minimal)
 
@@ -81,10 +88,10 @@ See [`DESIGN.md`](DESIGN.md) for the full contract (aging ladder, adapters, fuzz
 
 ```
 foreman / horse     → multi-step, memory, merge
-mayfly              → one-shot, TTL, vanish
+mayfly              → throwaway *agents* (harness + TTL)
 agent-launch        → resource-controlled durable dispatch
-buckets             → throwaway *runtimes* (node/python/…)
-mayfly              → throwaway *agents*
+buckets             → throwaway *runtimes* + *worktrees* (mayfly uses worktree)
+flame / firefly     → workspace OS (heat/brands/fuel) — held, not wired
 ```
 
 Self-contained: no path deps on peer projects.

@@ -7,14 +7,16 @@ mod prompt;
 mod store;
 mod task;
 mod ttl;
+mod worktree;
 
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-use crate::hatch::{expire_hatch, plan_hatch, run_hatch};
+use crate::hatch::{expire_hatch, plan_hatch, run_hatch, HatchOpts};
 use crate::store::HatchStore;
 use crate::task::MayflyTask;
+use crate::worktree::WorktreeSpec;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -48,6 +50,18 @@ enum Commands {
         /// Skip fuzziness gate (not recommended)
         #[arg(long)]
         allow_fuzzy: bool,
+        /// Provision cwd via `buckets worktree create` against this repo
+        #[arg(long)]
+        worktree: Option<PathBuf>,
+        /// Branch for --worktree (default: mayfly/<hatch-id>)
+        #[arg(long)]
+        branch: Option<String>,
+        /// Base ref for --worktree (passed to buckets --from)
+        #[arg(long)]
+        from: Option<String>,
+        /// Keep the buckets worktree after hatch (default: remove --force)
+        #[arg(long)]
+        keep_worktree: bool,
     },
     /// Show status of a hatch
     Status { id: String },
@@ -87,6 +101,10 @@ fn main() -> Result<()> {
             task,
             dry_run,
             allow_fuzzy,
+            worktree,
+            branch,
+            from,
+            keep_worktree,
         } => {
             let t = load_task(&task)?;
             if !allow_fuzzy {
@@ -96,12 +114,20 @@ fn main() -> Result<()> {
                     std::process::exit(2);
                 }
             }
-            let plan = plan_hatch(&store, &t)?;
+            let opts = HatchOpts {
+                worktree: worktree.map(|repo| WorktreeSpec {
+                    repo,
+                    branch,
+                    from,
+                    keep: keep_worktree,
+                }),
+            };
+            let plan = plan_hatch(&store, &t, &opts)?;
             if dry_run {
                 println!("{}", serde_json::to_string_pretty(&plan)?);
                 return Ok(());
             }
-            let report = run_hatch(&store, &t, plan)?;
+            let report = run_hatch(&store, &t, plan, &opts)?;
             println!("{}", serde_json::to_string_pretty(&report)?);
             if !report.success {
                 std::process::exit(report.exit_code.unwrap_or(1));

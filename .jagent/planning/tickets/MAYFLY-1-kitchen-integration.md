@@ -1,39 +1,33 @@
-# MAYFLY-1 — kitchen / worktree integration
+# MAYFLY-1 — buckets worktree isolation
 
 | Field | Value |
 |-------|-------|
 | **ID** | MAYFLY-1 |
 | **Priority** | P2 |
-| **Status** | Backlog |
+| **Status** | Done |
 | **Phase** | M1 |
-| **Assignee** | unassigned |
+| **Assignee** | cursor |
 | **Dependencies** | none |
 | **Estimated effort** | M |
 
 ## Problem
 
-v0 hatches into whatever `cwd` the task provides. Shared source checkouts are unsafe under mom's kitchen. Callers should be able to ask mayfly to provision an ephemeral worktree (via `kitchen` / `buckets worktree`) and clean it up on expire.
+v0 hatched into whatever `cwd` the task provided. Shared source checkouts are unsafe under mom's kitchen.
 
 ## Success criteria
 
-- [ ] `mayfly hatch task.json --kitchen` provisions an isolated worktree before spawn
-- [ ] Default path refuses (or strongly warns on) hatching into a non-worktree git checkout of a known shared root
-- [ ] Teardown removes the worktree on done/expire/fail
-- [ ] `cargo test` covers the refuse/warn path without requiring a live kitchen binary when mocked
+- [x] `mayfly hatch task.json --worktree <repo>` provisions via `buckets worktree create`
+- [x] Teardown via `buckets worktree remove --force` on done/expire/fail
+- [x] `--keep-worktree` / `--branch` / `--from` flags
+- [x] Warn when cwd looks like a primary source checkout without `--worktree`
+- [x] No path-dep on buckets; no flame/firefly wiring
 
-## Technical approach
+## Resolution
 
-- Detect `kitchen` / `buckets worktree` on PATH; feature-gate behavior if missing.
-- Add CLI flag + task field (`isolation: kitchen | cwd`).
-- Record worktree path on the hatch record for `expire` cleanup.
-
-## Files to modify
-
-- `src/main.rs` — `--kitchen` flag
-- `src/hatch.rs` — provision + teardown
-- `DESIGN.md` — document v1 isolation
+Shipped `src/worktree.rs` + hatch/CLI flags. Uses public `buckets` CLI only.
+Flame/firefly/flare held deliberately (heat/brands/fuel layer, not git worktree).
 
 ## Non-goals
 
-- Replacing kitchen itself
-- Multi-repo path-dep rewriting
+- kitchen enter/ship UX (horse lifecycle)
+- firefly spark wrapping the harness

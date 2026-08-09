@@ -17,6 +17,15 @@ pub struct HatchRecord {
     pub pid: Option<u32>,
     pub expire_reason: Option<String>,
     pub dir: PathBuf,
+    /// Source repo for a buckets-provisioned worktree (if any).
+    #[serde(default)]
+    pub worktree_repo: Option<String>,
+    #[serde(default)]
+    pub worktree_path: Option<String>,
+    #[serde(default)]
+    pub worktree_branch: Option<String>,
+    #[serde(default)]
+    pub worktree_keep: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

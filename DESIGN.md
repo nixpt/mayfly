@@ -165,10 +165,27 @@ then exit.
 
 ## Isolation
 
-v0: caller provides `cwd` (ideally a kitchen/worktree). mayfly does not invent git policy.
-v1: optional `--kitchen` integration → `kitchen enter` / `kitchen clean` around the hatch.
+**v1 (shipped): `buckets worktree`** — public nixpt/buckets primitive.
 
-Never hatch into a shared source checkout by default. Mom's kitchen applies.
+```bash
+mayfly hatch task.json --worktree /path/to/repo
+# → buckets worktree create <repo> mayfly/<id>
+# → hatch with cwd=worktree
+# → buckets worktree remove … --force on done/expire/fail
+```
+
+| flag | meaning |
+|------|---------|
+| `--worktree <repo>` | provision cwd via buckets |
+| `--branch <name>` | override default `mayfly/<id>` |
+| `--from <ref>` | base for the new branch |
+| `--keep-worktree` | skip teardown (debug / handoff) |
+
+No path-dep on buckets — shells out if on PATH. Warns when `cwd` looks like a
+primary source checkout (`.git` directory) and `--worktree` was not used.
+
+**Held: flame / firefly / flare.** Those own heat/brands/fuel and zram cache roots —
+a different layer. Mayflies do not wrap harnesses in `firefly spark`.
 
 ## Non-goals
 

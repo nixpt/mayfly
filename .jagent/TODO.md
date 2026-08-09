@@ -10,13 +10,13 @@ truth). This `TODO.md` is imported by dejavue as an ambient task surface.
 - [x] Adapters: claude, cursor, codex, cece (stub), exec
 - [x] Rename from Meeseeks IP risk → mayfly
 - [x] Wire `.dejavue/`, `.jagent/`, `scripts/bump-version.sh`
+- [x] MAYFLY-1: `--worktree` via public buckets (flame/firefly held)
 
 ## Next
 
-- MAYFLY-1: kitchen/worktree integration (`--kitchen`)
 - MAYFLY-2: decay inject into live harness sessions (best-effort)
-- MAYFLY-3: live-validate cursor/claude/codex adapters against real binaries
-- MAYFLY-4: first remote + initial `v0.1.0` tag
+- MAYFLY-3: live-validate claude/codex adapters (cursor already smoked)
+- MAYFLY-4: initial `v0.1.0` tag
 
 ## Reference
 

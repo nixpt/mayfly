@@ -15,7 +15,7 @@ See `.jagent/planning/tickets/` for full details on each `MAYFLY-N` ID.
 
 ## M1 — Isolation
 
-- [ ] **MAYFLY-1** (M): Optional `--kitchen` integration — hatch via kitchen/worktree; refuse shared source checkout by default.
+- [x] **MAYFLY-1** (M): `--worktree` via public `buckets worktree` (create → hatch → remove --force). Flame/firefly held.
 
 ---
 

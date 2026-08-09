@@ -5,6 +5,7 @@ use crate::prompt;
 use crate::store::{HatchRecord, HatchState, HatchStore};
 use crate::task::{DoneWhen, MayflyTask};
 use crate::ttl::parse_ttl;
+use crate::worktree::{self, ProvisionedWorktree, WorktreeSpec};
 use anyhow::{bail, Context, Result};
 use chrono::Utc;
 use serde::Serialize;
@@ -14,6 +15,11 @@ use std::process::Child;
 use std::thread;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
+
+#[derive(Debug, Clone, Default)]
+pub struct HatchOpts {
+    pub worktree: Option<WorktreeSpec>,
+}
 
 #[derive(Debug, Serialize)]
 pub struct HatchPlanOut {
@@ -25,6 +31,10 @@ pub struct HatchPlanOut {
     pub ttl_secs: u64,
     pub prompt_preview: String,
     pub done_when: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub worktree_repo: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub worktree_branch: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -36,6 +46,8 @@ pub struct HatchReport {
     pub reason: String,
     pub stdout_tail: String,
     pub stderr_tail: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub worktree_path: Option<String>,
 }
 
 struct Planned {
@@ -46,8 +58,23 @@ struct Planned {
     ttl: Duration,
 }
 
-pub fn plan_hatch(store: &HatchStore, task: &MayflyTask) -> Result<HatchPlanOut> {
+pub fn plan_hatch(
+    store: &HatchStore,
+    task: &MayflyTask,
+    opts: &HatchOpts,
+) -> Result<HatchPlanOut> {
     let planned = prepare(store, task, None)?;
+    let (wt_repo, wt_branch) = match &opts.worktree {
+        Some(spec) => (
+            Some(spec.repo.display().to_string()),
+            Some(
+                spec.branch
+                    .clone()
+                    .unwrap_or_else(|| worktree::default_branch(&planned.id)),
+            ),
+        ),
+        None => (None, None),
+    };
     Ok(HatchPlanOut {
         id: planned.id,
         harness: planned.spawn.harness.clone(),
@@ -57,6 +84,8 @@ pub fn plan_hatch(store: &HatchStore, task: &MayflyTask) -> Result<HatchPlanOut>
         ttl_secs: planned.ttl.as_secs(),
         prompt_preview: planned.prompt.chars().take(400).collect(),
         done_when: task.done_when.summary(),
+        worktree_repo: wt_repo,
+        worktree_branch: wt_branch,
     })
 }
 
@@ -64,13 +93,41 @@ pub fn run_hatch(
     store: &HatchStore,
     task: &MayflyTask,
     plan_out: HatchPlanOut,
+    opts: &HatchOpts,
 ) -> Result<HatchReport> {
-    let planned = prepare(store, task, Some(&plan_out.id))?;
+    let mut task = task.clone();
+    let planned = prepare(store, &task, Some(&plan_out.id))?;
+
+    let provisioned = if let Some(spec) = &opts.worktree {
+        let branch = spec
+            .branch
+            .clone()
+            .unwrap_or_else(|| worktree::default_branch(&planned.id));
+        let wt = worktree::create(spec, &branch)?;
+        task.cwd = wt.path.display().to_string();
+        Some(wt)
+    } else {
+        if worktree::looks_like_source_checkout(std::path::Path::new(&task.cwd)) {
+            eprintln!(
+                "mayfly: warning: cwd {} looks like a shared source checkout — \
+                 prefer --worktree <repo> (buckets)",
+                task.cwd
+            );
+        }
+        None
+    };
+
+    // Re-plan spawn against the (possibly new) cwd.
+    let prompt_path = planned.dir.join("prompt.txt");
+    std::fs::write(&prompt_path, &planned.prompt)?;
+    let adapter = adapters::for_harness(task.harness);
+    let spawn = adapter.plan(&task, &prompt_path)?;
+
     let now = Utc::now();
     let mut rec = HatchRecord {
         id: planned.id.clone(),
         state: HatchState::Alive,
-        harness: planned.spawn.harness.clone(),
+        harness: spawn.harness.clone(),
         task: task.task.clone(),
         cwd: task.cwd.clone(),
         ttl: task.ttl.clone(),
@@ -79,22 +136,29 @@ pub fn run_hatch(
         pid: None,
         expire_reason: None,
         dir: planned.dir.clone(),
+        worktree_repo: provisioned.as_ref().map(|w| w.repo.display().to_string()),
+        worktree_path: provisioned.as_ref().map(|w| w.path.display().to_string()),
+        worktree_branch: provisioned.as_ref().map(|w| w.branch.clone()),
+        worktree_keep: provisioned.as_ref().map(|w| w.keep).unwrap_or(false),
     };
     store.save(&rec)?;
 
-    let prompt_path = planned.dir.join("prompt.txt");
-    std::fs::write(&prompt_path, &planned.prompt)?;
-
-    let mut child = adapters::spawn(&planned.spawn).with_context(|| {
-        format!(
-            "spawn {} ({})",
-            planned.spawn.program, planned.spawn.harness
-        )
+    let mut child = adapters::spawn(&spawn).with_context(|| {
+        format!("spawn {} ({})", spawn.program, spawn.harness)
     })?;
     rec.pid = Some(child.id());
     store.save(&rec)?;
 
-    watch(store, &mut rec, task, &mut child, planned.ttl)
+    let mut report = watch(store, &mut rec, &task, &mut child, planned.ttl)?;
+    report.worktree_path = provisioned.as_ref().map(|w| w.path.display().to_string());
+
+    if let Some(wt) = provisioned {
+        if let Err(e) = teardown_worktree(store, &mut rec, &wt) {
+            eprintln!("mayfly: worktree teardown warning: {e:#}");
+        }
+    }
+
+    Ok(report)
 }
 
 pub fn expire_hatch(store: &HatchStore, id: &str, reason: &str) -> Result<()> {
@@ -104,10 +168,37 @@ pub fn expire_hatch(store: &HatchStore, id: &str, reason: &str) -> Result<()> {
     if let Some(pid) = rec.pid {
         let _ = term_pid(pid);
     }
+    if let (Some(repo), Some(path), Some(branch)) = (
+        rec.worktree_repo.clone(),
+        rec.worktree_path.clone(),
+        rec.worktree_branch.clone(),
+    ) {
+        let wt = ProvisionedWorktree {
+            repo: PathBuf::from(repo),
+            path: PathBuf::from(path),
+            branch,
+            keep: rec.worktree_keep,
+        };
+        let _ = teardown_worktree(store, &mut rec, &wt);
+    }
     rec.state = HatchState::Expired;
     rec.expire_reason = Some(reason.into());
     rec.updated_at = Utc::now();
     store.save(&rec)?;
+    Ok(())
+}
+
+fn teardown_worktree(
+    store: &HatchStore,
+    rec: &mut HatchRecord,
+    wt: &ProvisionedWorktree,
+) -> Result<()> {
+    worktree::remove(wt)?;
+    if !wt.keep {
+        rec.worktree_path = None;
+    }
+    rec.updated_at = Utc::now();
+    store.save(rec)?;
     Ok(())
 }
 
@@ -168,6 +259,7 @@ fn watch(
                 reason: "ttl_exceeded".into(),
                 stdout_tail: String::new(),
                 stderr_tail: String::new(),
+                worktree_path: rec.worktree_path.clone(),
             });
         }
 
@@ -187,7 +279,6 @@ fn watch(
             Some(status) => {
                 let (stdout_tail, stderr_tail) = drain_output(child);
                 let code = status.code();
-                // Exec's child *is* the done_when command — don't re-run it.
                 let is_exec = matches!(task.harness, crate::task::Harness::Exec);
                 let done_ok = if is_exec {
                     status.success()
@@ -223,11 +314,10 @@ fn watch(
                     reason: rec.expire_reason.clone().unwrap_or_default(),
                     stdout_tail: tail(&stdout_tail, 2000),
                     stderr_tail: tail(&stderr_tail, 2000),
+                    worktree_path: rec.worktree_path.clone(),
                 });
             }
             None => {
-                // Never poll done_when for Exec — that command is already the child,
-                // and re-running it (e.g. `sleep 30`) would block the TTL loop.
                 if !matches!(task.harness, crate::task::Harness::Exec)
                     && check_done_when(task, Duration::from_secs(5))?
                 {
@@ -246,6 +336,7 @@ fn watch(
                         reason: "done_when satisfied".into(),
                         stdout_tail: String::new(),
                         stderr_tail: String::new(),
+                        worktree_path: rec.worktree_path.clone(),
                     });
                 }
                 thread::sleep(poll);
@@ -257,7 +348,6 @@ fn watch(
 fn check_done_when(task: &MayflyTask, timeout: Duration) -> Result<bool> {
     match &task.done_when {
         DoneWhen::Command { run, expect_exit } => {
-            // Cap probe time so a hanging done_when can't starve the TTL loop.
             let secs = timeout.as_secs().max(1).to_string();
             let status = std::process::Command::new("timeout")
                 .args([&secs, "sh", "-c", run])
