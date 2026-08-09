@@ -11,7 +11,7 @@ mayfly hatch examples/fix-test.json --worktree /path/to/repo
 
 Not a teammate. Not a persona. A disposable specialist with a hard lifespan.
 
-**Current release:** [v0.1.1](https://github.com/nixpt/mayfly/releases/tag/v0.1.1) · repo [nixpt/mayfly](https://github.com/nixpt/mayfly)
+**Current release:** [v0.1.2](https://github.com/nixpt/mayfly/releases/tag/v0.1.2) · repo [nixpt/mayfly](https://github.com/nixpt/mayfly)
 
 ## Why
 
@@ -32,7 +32,7 @@ For "fix this one thing and vanish", use mayfly.
 ## Install
 
 ```bash
-cargo install --git https://github.com/nixpt/mayfly --tag v0.1.1
+cargo install --git https://github.com/nixpt/mayfly --tag v0.1.2
 # or from a checkout:
 cargo install --path .
 # binary: mayfly
@@ -84,7 +84,7 @@ See [`DESIGN.md`](DESIGN.md) for the full contract (aging ladder, adapters, fuzz
 
 | id | adapter | notes |
 |----|---------|--------|
-| `cursor` | `cursor-agent -p --yolo --trust` | smoke OK @ v0.1.1 |
+| `cursor` | `cursor-agent -p --yolo --trust` | smoke OK @ v0.1.x |
 | `ccf` | same argv as `claude` | needs fleet `ccf`/flownet Anthropic env — smoke OK |
 | `cxf` | `codex --profile flownet exec …` | needs `FLOWNET_TOKEN_CODEX` — smoke OK |
 | `opencode` | `opencode run --auto --dir …` | set `MAYFLY_OPENCODE_MODEL` (e.g. `opencode/big-pickle`) — smoke OK |
