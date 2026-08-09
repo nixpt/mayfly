@@ -23,12 +23,13 @@
 ## Resolution (2026-08-09)
 
 - Fixture: `examples/smoke-touch-file.json` + `scripts/smoke-harness.sh`
-- Claude: added `--dangerously-skip-permissions` (agent-launch parity)
-- Codex: `--full-auto` → `--sandbox workspace-write` (deprecation)
-- Cursor: unchanged; smoke **OK**
-- Claude/Codex: argv launches cleanly; failed on auth (OAuth / 401) — honest failure with exit 1
+- Added/verified: `ccf`, `cxf`, `opencode` (+ `MAYFLY_OPENCODE_MODEL`)
+- Claude: `--dangerously-skip-permissions`; prefer fleet `ccf`
+- Codex: `--sandbox workspace-write`; prefer fleet `cxf`
+- Smoke **OK**: cursor, ccf, cxf, opencode, exec
+- Raw claude/codex/cece: fail honestly on auth/budget when env missing
 - `adapters::spawn` checks PATH and errors clearly
 
 ## Non-goals
 
-- Full fleet dispatch integration (MAYFLY-4 leftovers: fleet usage note in README)
+- Full aging inject (MAYFLY-2)

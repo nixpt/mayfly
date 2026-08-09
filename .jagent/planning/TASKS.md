@@ -25,12 +25,12 @@ See `.jagent/planning/tickets/` for full details on each `MAYFLY-N` ID.
 
 ---
 
-## M3 — Aging inject
+## M3 — Aging inject (parked)
 
-- [ ] **MAYFLY-2** (M): Best-effort warn/narrow inject into live harness sessions when lifespan crosses thresholds.
+- [ ] **MAYFLY-2** (M): Best-effort warn/narrow inject into live harness sessions when lifespan crosses thresholds. *(post-v0.1.1 polish — not a release gate)*
 
 ---
 
 ## M4 — Release & fleet wire
 
-- [x] **MAYFLY-4** (S): Public remote + `v0.1.0` + fleet usage note in README.
+- [x] **MAYFLY-4** (S): Public remote + tags + fleet usage note — **v0.1.1** released.

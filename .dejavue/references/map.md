@@ -4,10 +4,10 @@
 
 ```
 mayfly/
-├── src/                 # CLI + hatch lifecycle + harness adapters
+├── src/                 # CLI + hatch lifecycle + harness adapters + worktree
 ├── schemas/             # MayflyTask JSON Schema
-├── examples/            # good / vague / exec smoke tasks
-├── scripts/             # bump-version.sh (release automation)
+├── examples/            # good / vague / exec / smoke fixtures
+├── scripts/             # bump-version.sh, smoke-harness.sh
 ├── .dejavue/            # architectural memory (DCP/1.0)
 ├── .jagent/             # MAYFLY-NN planning board
 ├── DESIGN.md            # contract
@@ -18,18 +18,20 @@ mayfly/
 
 - `src/main.rs` — CLI (`validate` / `hatch` / `status` / `expire` / `list`)
 - `src/hatch.rs` — provision → spawn → watch TTL/`done_when` → expire
+- `src/worktree.rs` — `buckets worktree create|remove` (optional `--worktree`)
 - `src/fuzz.rs` — reject vague / multi-goal / overlong TTL tasks
-- `src/adapters/` — claude, cursor, codex, cece, exec
+- `src/adapters/` — claude, ccf, cursor, codex, cxf, cece, opencode, exec
 
 ## Design invariants
 
 - Max TTL 2h (longer → horse / `agent-launch`)
 - No recursive hatch (`no_spawn`)
 - Mechanical `done_when` only (no vibes)
-- No peer path-deps
+- No peer path-deps; buckets/flame are CLI/env composition only
 
 ## External dependencies
 
 - clap / serde / anyhow / chrono / uuid / regex / thiserror — std CLI stack
-- Host harness binaries (`claude`, `cursor-agent`, `codex`, …) at hatch time
+- Host harness binaries at hatch time
+- Optional `buckets` on PATH for `--worktree`
 - `timeout(1)` for bounded `done_when` probes on non-exec harnesses

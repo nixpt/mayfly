@@ -1,4 +1,4 @@
-# MAYFLY-4 — remote + v0.1.0 tag
+# MAYFLY-4 — remote + release tags
 
 | Field | Value |
 |-------|-------|
@@ -12,15 +12,15 @@
 
 ## Problem
 
-Need public remote + initial tag so `scripts/bump-version.sh` / release workflow can run.
+Need public remote + tags so `scripts/bump-version.sh` / release workflow can run.
 
 ## Success criteria
 
 - [x] GitHub remote exists — https://github.com/nixpt/mayfly (public)
-- [x] `v0.1.0` tag on main
-- [x] `BUMPVER_DRY_RUN=1` plans patch/minor correctly after tag
+- [x] `v0.1.0` + `v0.1.1` tags on main
+- [x] GitHub Releases for both tags
 - [x] Fleet usage note in README (`mayfly hatch … --worktree`)
 
 ## Resolution
 
-Remote + tag landed 2026-08-09. Fleet usage documented under README "Fleet usage (horse → mayfly)".
+Remote + tags landed 2026-08-09. Latest: **v0.1.1** (live adapters + smoke). Fleet usage under README "Fleet usage (horse → mayfly)".

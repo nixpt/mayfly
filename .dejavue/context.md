@@ -1,6 +1,6 @@
 ---
 name: mayfly
-purpose: Short-lived single-purpose agents for Cursor, Claude, Codex, and friends
+purpose: Short-lived single-purpose agents for Cursor, Claude, Codex, OpenCode, and friends
 dcp: DCP/1.0
 ---
 
@@ -17,6 +17,8 @@ dcp: DCP/1.0
 - Mom's kitchen: prefer `--worktree`; warn on primary source checkouts.
 - Vague tasks are rejected at validate — bad task design is a mayfly bug, not a harness bug.
 - Workers must not hatch other mayflies (`constraints.no_spawn`).
+- Fleet Claude/Codex: prefer harness `ccf` / `cxf` (flownet env) over raw `claude` / `codex`.
+- OpenCode: set `MAYFLY_OPENCODE_MODEL` (e.g. `opencode/big-pickle`) to avoid flownet default.
 - Ticket IDs: `MAYFLY-NN`. Work on `agent/<name>/MAYFLY-NN` branches in worktrees.
 - Never commit to `main` from an agent session — PR via task branch.
 
@@ -25,31 +27,31 @@ dcp: DCP/1.0
 ```bash
 cargo test
 cargo build --release
-# binary lands under $CARGO_TARGET_DIR (fleet often uses /build/release/mayfly)
 mayfly validate examples/fix-test.json
 mayfly validate examples/vague-ask.json   # expect reject exit 2
 mayfly hatch examples/exec-true.json
+MAYFLY_BIN=./target/release/mayfly ./scripts/smoke-harness.sh cursor
 ```
+
+Install from release: `cargo install --git https://github.com/nixpt/mayfly --tag v0.1.1`
 
 ## Architecture Map
 
 ```
 mayfly/
-├── DESIGN.md              # contract: hatch / aging / expire / adapters
+├── DESIGN.md / README.md
 ├── schemas/task.schema.json
-├── examples/              # good + vague + exec smoke tasks
-├── scripts/bump-version.sh
+├── examples/              # fix-test, vague-ask, exec-true, smoke-touch-file
+├── scripts/
+│   ├── bump-version.sh
+│   └── smoke-harness.sh
 ├── .dejavue/              # architectural memory
 ├── .jagent/               # planning board (MAYFLY-NN)
 └── src/
     ├── main.rs            # CLI: validate / hatch / status / expire / list
-    ├── task.rs            # MayflyTask schema types
-    ├── fuzz.rs            # vagueness gate
-    ├── hatch.rs           # lifecycle + TTL watch loop
-    ├── prompt.rs          # prompt envelope
-    ├── store.rs           # ~/.local/state/mayfly records
-    ├── ttl.rs             # 15m / 30s / 2h parser
-    └── adapters/          # claude | cursor | codex | cece | exec
+    ├── task.rs / fuzz.rs / ttl.rs / prompt.rs / store.rs
+    ├── hatch.rs / worktree.rs
+    └── adapters/          # claude ccf cursor codex cxf cece opencode exec
 ```
 
 ## Memory
