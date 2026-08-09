@@ -1,5 +1,5 @@
 # State
 
-Updated: 2026-08-09T00:02:12-05:00
+Updated: 2026-08-09T00:38:15-05:00
 
-M0 CLI green locally. .dejavue/.jagent/scripts/bump-version.sh wired. Next: MAYFLY-1 kitchen, MAYFLY-3 live adapters. No remote yet.
+v0.1.1 released (nixpt/mayfly). M0–M2 + fleet docs shipped. Smoke OK: cursor, ccf, cxf, opencode(+MAYFLY_OPENCODE_MODEL), exec. MAYFLY-2 aging inject parked. Docs/dejavue sync on agent/cursor/MAYFLY-docs.

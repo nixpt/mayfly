@@ -2,6 +2,8 @@
 
 Short-lived agents. One task. Then gone.
 
+**Release:** v0.1.1 — https://github.com/nixpt/mayfly
+
 ## Project memory
 
 This repo uses [dejavue](https://github.com/nixpt/dejavue) for persistent architectural context.
@@ -18,6 +20,9 @@ cargo test
 cargo build --release
 mayfly validate examples/fix-test.json
 mayfly hatch examples/exec-true.json
+MAYFLY_BIN=./target/release/mayfly ./scripts/smoke-harness.sh cursor
 ```
+
+Prefer `--worktree <repo>` (needs `buckets` on PATH). Fleet Claude/Codex: harness `ccf` / `cxf`.
 
 <!-- dejavue:discovery -->

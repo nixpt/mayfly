@@ -4,10 +4,10 @@
 |-------|-------|
 | **ID** | MAYFLY-2 |
 | **Priority** | P3 |
-| **Status** | Backlog |
+| **Status** | Parked (post-v0.1.1) |
 | **Phase** | M3 |
 | **Assignee** | unassigned |
-| **Dependencies** | MAYFLY-3 |
+| **Dependencies** | MAYFLY-3 (done) |
 | **Estimated effort** | M |
 
 ## Problem
@@ -35,3 +35,7 @@ Aging ladder currently only flips record state. DESIGN calls for injecting "narr
 
 - Guaranteed compliance from the LLM
 - Killing tools mid-flight except on TTL
+
+## Note
+
+Not a release gate for v0.1.1 — aging *states* already flip; inject is polish.

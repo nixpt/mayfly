@@ -3,22 +3,21 @@
 Repo-local agent instructions live in `.dejavue/context.md` (DCP/1.0 source of
 truth). This `TODO.md` is imported by dejavue as an ambient task surface.
 
-## Active
+## Shipped (v0.1.1)
 
-- [x] Scaffold CLI: validate / hatch / status / expire / list
-- [x] Fuzziness gate + aging ladder + TTL expire
-- [x] Adapters: claude, cursor, codex, cece (stub), exec
-- [x] Rename from Meeseeks IP risk → mayfly
-- [x] Wire `.dejavue/`, `.jagent/`, `scripts/bump-version.sh`
-- [x] MAYFLY-1: `--worktree` via public buckets (flame/firefly held)
-- [x] MAYFLY-3: live adapter smoke + smoke-harness.sh
-- [x] MAYFLY-4: public remote + v0.1.0 + fleet usage note
+- [x] CLI: validate / hatch / status / expire / list
+- [x] Fuzziness gate + aging *states* + TTL expire
+- [x] Adapters: cursor, ccf, cxf, claude, codex, cece, opencode, exec
+- [x] `--worktree` via public buckets
+- [x] `.dejavue/` / `.jagent/` / bump-version + GitHub Release
+- [x] Smoke script + harness matrix in README
 
-## Next
+## Next (optional)
 
-- MAYFLY-2: aging/narrow inject into live harness sessions (best-effort)
+- [ ] MAYFLY-2: aging/narrow *inject* into live harness sessions (best-effort)
+- [ ] CHANGELOG.md if we want human release notes alongside mechanical bumps
 
 ## Reference
 
 - `DESIGN.md` — full contract
-- `.jagent/planning/` — ROADMAP / TASKS / tickets
+- https://github.com/nixpt/mayfly/releases/tag/v0.1.1

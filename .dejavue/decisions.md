@@ -50,3 +50,32 @@ Rejected alternatives:
 - **skip live smoke until all auths green**: hides argv drift
 - **keep --full-auto forever**: warns and may vanish
 
+
+## 2026-08-09T00:38:04-05:00 — Prefer ccf/cxf harness ids over raw claude/codex on this fleet
+
+Reason:
+ccf/cxf are zsh wrappers that inject flownet Anthropic/Codex env; raw claude/codex fail honestly on missing auth. Adapters share argv with claude/codex but expect that env — document and smoke those ids as the fleet path.
+
+Rejected alternatives:
+- **require users to source ccf before hatch with harness=claude**: opaque and easy to miss
+- **bake flownet secrets into mayfly**: wrong boundary
+
+
+## 2026-08-09T00:38:05-05:00 — OpenCode model via MAYFLY_OPENCODE_MODEL env
+
+Reason:
+opencode defaults can route through flownet; setting MAYFLY_OPENCODE_MODEL (e.g. opencode/big-pickle) keeps smoke and local hatches on OpenCode-native providers without hardcoding a model in the task schema.
+
+Rejected alternatives:
+- **hardcode model in adapter**: fights per-user provider choice
+- **require model in every task JSON**: noisy for the common case
+
+
+## 2026-08-09T00:38:05-05:00 — Ship v0.1.1 with aging states but park inject (MAYFLY-2)
+
+Reason:
+TTL aging ladder states already flip; per-harness inject is best-effort polish and not needed for the public release gate. Keeps the crate small and honest about what is verified.
+
+Rejected alternatives:
+- **block release on aging inject**: delays useful hatch loop
+

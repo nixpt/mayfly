@@ -2,6 +2,10 @@
 
 > Short-lived agents. One task. Then gone.
 
+**Status:** v0.1.1 released ([nixpt/mayfly](https://github.com/nixpt/mayfly)).
+Core hatch loop + buckets worktree + live adapters shipped. MAYFLY-2 (aging
+*inject*) remains optional post-release polish — aging *states* already flip.
+
 ## Problem
 
 Agent harnesses (Cursor, Claude Code, Codex, cece, …) are good at long sessions.
@@ -27,7 +31,7 @@ captain / human
       │
   mayfly           ← THIS — one ask, TTL, vanish
       │
-  harness adapter  ← cursor | claude | codex | …
+  harness adapter  ← cursor | ccf | cxf | opencode | …
 ```
 
 A mayfly is not a teammate. It is not a persona. It has no scroll, no memory
@@ -135,10 +139,11 @@ expire(child) -> ExitReport
 | `codex` | `codex exec --sandbox workspace-write --skip-git-repo-check …` |
 | `cxf` | `codex --profile flownet exec …` (+ `FLOWNET_TOKEN_CODEX`; fleet `cxf` shape) |
 | `cece` | `cece-rs -w <cwd> -p … --afk --output-format text` |
-| `opencode` | `opencode run --format json --auto --dir <cwd> …` |
+| `opencode` | `opencode run --format json --auto --dir <cwd> …` (+ optional `MAYFLY_OPENCODE_MODEL`) |
 | `exec` | no LLM — run `done_when.command` only (dry sanity) |
 
-Live smoke: `./scripts/smoke-harness.sh <harness>` (see README matrix for last-verified dates).
+Live smoke: `./scripts/smoke-harness.sh <harness>` (see README matrix).
+Aging ladder *states* are live; per-harness *inject* at warn/narrow is MAYFLY-2 (parked).
 
 Adapters never interpret the task. mayfly owns policy; adapters own argv.
 
