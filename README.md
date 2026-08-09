@@ -84,7 +84,7 @@ See [`DESIGN.md`](DESIGN.md) for the full contract (aging ladder, adapters, fuzz
 | `codex` | `codex exec --sandbox workspace-write …` | 401 without flownet profile |
 | `cxf` | `codex --profile flownet exec …` (+ `FLOWNET_TOKEN_CODEX`) | 2026-08-09 — **OK** |
 | `cece` | `cece-rs -w … -p … --afk` | argv OK; 402 budget exhausted |
-| `opencode` | `opencode run --auto --dir …` | argv OK; 401 flownet bearer |
+| `opencode` | `opencode run --auto --dir …` [`MAYFLY_OPENCODE_MODEL`] | 2026-08-09 — **OK** with `opencode/big-pickle` (own provider; default config often hits flownet) |
 | `exec` | `sh -c <done_when>` | 2026-08-09 — **OK** |
 
 Fleet wrappers `ccf` / `cxf` are shell functions; export their env (or run under a login zsh that defines them) before `mayfly hatch` with harness `ccf`/`cxf`.
