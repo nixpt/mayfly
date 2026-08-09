@@ -78,18 +78,24 @@ See [`DESIGN.md`](DESIGN.md) for the full contract (aging ladder, adapters, fuzz
 
 | id | adapter | last live smoke (this box) |
 |----|---------|----------------------------|
-| `claude` | `claude -p … --dangerously-skip-permissions` | 2026-08-09 — argv OK; failed honestly (OAuth expired) |
-| `cursor` | `cursor-agent -p --yolo --trust` | 2026-08-09 — **OK** (`MAYFLY_SMOKE_OK`) |
-| `codex` | `codex exec --sandbox workspace-write --skip-git-repo-check` | 2026-08-09 — argv OK; failed honestly (401 Unauthorized) |
-| `cece` | `cece-rs --prompt-file …` | stub argv only |
+| `claude` | `claude -p … --dangerously-skip-permissions` | OAuth expired without flownet env |
+| `ccf` | same as `claude` (expects `ccf`/flownet Anthropic env) | 2026-08-09 — **OK** |
+| `cursor` | `cursor-agent -p --yolo --trust` | 2026-08-09 — **OK** |
+| `codex` | `codex exec --sandbox workspace-write …` | 401 without flownet profile |
+| `cxf` | `codex --profile flownet exec …` (+ `FLOWNET_TOKEN_CODEX`) | 2026-08-09 — **OK** |
+| `cece` | `cece-rs -w … -p … --afk` | argv OK; 402 budget exhausted |
+| `opencode` | `opencode run --auto --dir …` | argv OK; 401 flownet bearer |
 | `exec` | `sh -c <done_when>` | 2026-08-09 — **OK** |
+
+Fleet wrappers `ccf` / `cxf` are shell functions; export their env (or run under a login zsh that defines them) before `mayfly hatch` with harness `ccf`/`cxf`.
 
 Optional smoke (needs `jq` + harness on PATH):
 
 ```bash
 cargo build --release
 MAYFLY_BIN=/build/release/mayfly ./scripts/smoke-harness.sh cursor
-# or: MAYFLY_SMOKE_HARNESS=claude ./scripts/smoke-harness.sh
+MAYFLY_BIN=/build/release/mayfly ./scripts/smoke-harness.sh cxf   # needs FLOWNET_TOKEN_CODEX
+MAYFLY_BIN=/build/release/mayfly ./scripts/smoke-harness.sh ccf   # needs ANTHROPIC_* flownet env
 ```
 
 Missing harness binaries error clearly (`harness '…' binary … not found on PATH`) instead of hanging.

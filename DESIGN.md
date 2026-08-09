@@ -130,9 +130,12 @@ expire(child) -> ExitReport
 | harness | spawn sketch |
 |---------|----------------|
 | `claude` | `claude -p … --output-format text --dangerously-skip-permissions` |
+| `ccf` | same argv as `claude`; expects fleet `ccf`/flownet Anthropic env |
 | `cursor` | `cursor-agent -p --yolo --trust …` |
-| `codex` | `codex exec --sandbox workspace-write --skip-git-repo-check …` (`--full-auto` deprecated) |
-| `cece` | `cece-rs --prompt-file …` (fleet-local) |
+| `codex` | `codex exec --sandbox workspace-write --skip-git-repo-check …` |
+| `cxf` | `codex --profile flownet exec …` (+ `FLOWNET_TOKEN_CODEX`; fleet `cxf` shape) |
+| `cece` | `cece-rs -w <cwd> -p … --afk --output-format text` |
+| `opencode` | `opencode run --format json --auto --dir <cwd> …` |
 | `exec` | no LLM — run `done_when.command` only (dry sanity) |
 
 Live smoke: `./scripts/smoke-harness.sh <harness>` (see README matrix for last-verified dates).

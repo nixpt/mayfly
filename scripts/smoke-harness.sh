@@ -13,7 +13,7 @@ MAYFLY_BIN="${MAYFLY_BIN:-mayfly}"
 STATE="${MAYFLY_STATE_DIR:-$(mktemp -d /tmp/mayfly-smoke-XXXXXX)}"
 
 [[ -n "$HARNESS" ]] || {
-  echo "usage: $0 <claude|cursor|codex|exec>" >&2
+  echo "usage: $0 <claude|ccf|cursor|codex|cxf|cece|opencode|exec>" >&2
   exit 2
 }
 

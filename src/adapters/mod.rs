@@ -1,10 +1,13 @@
 //! Harness adapters — argv only. Policy lives in mayfly.
 
+mod ccf;
 mod cece;
 mod claude;
 mod codex;
 mod cursor;
+mod cxf;
 mod exec;
+mod opencode;
 
 use crate::task::{Harness, MayflyTask};
 use anyhow::{bail, Context, Result};
@@ -29,9 +32,12 @@ pub trait Adapter {
 pub fn for_harness(h: Harness) -> Box<dyn Adapter> {
     match h {
         Harness::Claude => Box::new(claude::Claude),
+        Harness::Ccf => Box::new(ccf::Ccf),
         Harness::Cursor => Box::new(cursor::Cursor),
         Harness::Codex => Box::new(codex::Codex),
+        Harness::Cxf => Box::new(cxf::Cxf),
         Harness::Cece => Box::new(cece::Cece),
+        Harness::Opencode => Box::new(opencode::Opencode),
         Harness::Exec => Box::new(exec::Exec),
     }
 }

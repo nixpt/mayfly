@@ -3,24 +3,26 @@ use crate::task::MayflyTask;
 use anyhow::Result;
 use std::path::Path;
 
-pub struct Codex;
+pub struct Opencode;
 
-impl Adapter for Codex {
+impl Adapter for Opencode {
     fn name(&self) -> &'static str {
-        "codex"
+        "opencode"
     }
 
     fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan> {
-        // Raw codex (no flownet profile). Prefer harness `cxf` for FLOWNET_TOKEN_CODEX.
+        // agent-launch used --dangerously-skip-permissions; current CLI uses --auto.
         let prompt = super::read_prompt(prompt_path)?;
         Ok(SpawnPlan {
             harness: self.name().into(),
-            program: "codex".into(),
+            program: "opencode".into(),
             args: vec![
-                "exec".into(),
-                "--sandbox".into(),
-                "workspace-write".into(),
-                "--skip-git-repo-check".into(),
+                "run".into(),
+                "--format".into(),
+                "json".into(),
+                "--auto".into(),
+                "--dir".into(),
+                task.cwd.clone(),
                 prompt,
             ],
             cwd: Path::new(&task.cwd).to_path_buf(),
