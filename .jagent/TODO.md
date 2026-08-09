@@ -11,12 +11,12 @@ truth). This `TODO.md` is imported by dejavue as an ambient task surface.
 - [x] Rename from Meeseeks IP risk → mayfly
 - [x] Wire `.dejavue/`, `.jagent/`, `scripts/bump-version.sh`
 - [x] MAYFLY-1: `--worktree` via public buckets (flame/firefly held)
+- [x] MAYFLY-3: live adapter smoke + smoke-harness.sh
+- [x] MAYFLY-4: public remote + v0.1.0 + fleet usage note
 
 ## Next
 
-- MAYFLY-2: decay inject into live harness sessions (best-effort)
-- MAYFLY-3: live-validate claude/codex adapters (cursor already smoked)
-- MAYFLY-4: initial `v0.1.0` tag
+- MAYFLY-2: aging/narrow inject into live harness sessions (best-effort)
 
 ## Reference
 

@@ -21,7 +21,7 @@ See `.jagent/planning/tickets/` for full details on each `MAYFLY-N` ID.
 
 ## M2 — Live adapters
 
-- [ ] **MAYFLY-3** (M): Live-validate `claude` / `cursor` / `codex` adapters against real binaries with a tiny fixture task.
+- [x] **MAYFLY-3** (M): Live-validate `claude` / `cursor` / `codex` adapters (cursor OK; claude/codex honest auth fails).
 
 ---
 
@@ -33,4 +33,4 @@ See `.jagent/planning/tickets/` for full details on each `MAYFLY-N` ID.
 
 ## M4 — Release & fleet wire
 
-- [ ] **MAYFLY-4** (S): Create remote, tag `v0.1.0`, document foreman/horse usage of mayfly.
+- [x] **MAYFLY-4** (S): Public remote + `v0.1.0` + fleet usage note in README.

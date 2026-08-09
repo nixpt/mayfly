@@ -7,7 +7,7 @@ mod cursor;
 mod exec;
 
 use crate::task::{Harness, MayflyTask};
-use anyhow::Result;
+use anyhow::{bail, Context, Result};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -37,13 +37,34 @@ pub fn for_harness(h: Harness) -> Box<dyn Adapter> {
 }
 
 pub fn spawn(plan: &SpawnPlan) -> Result<Child> {
+    if which(&plan.program).is_none() {
+        bail!(
+            "harness '{}' binary `{}` not found on PATH — install it or pick another harness",
+            plan.harness,
+            plan.program
+        );
+    }
     let mut cmd = Command::new(&plan.program);
     cmd.args(&plan.args)
         .current_dir(&plan.cwd)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    Ok(cmd.spawn()?)
+    cmd.spawn()
+        .with_context(|| format!("failed to spawn harness '{}' (`{}`)", plan.harness, plan.program))
+}
+
+fn which(program: &str) -> Option<PathBuf> {
+    std::env::var_os("PATH").and_then(|paths| {
+        std::env::split_paths(&paths).find_map(|dir| {
+            let p = dir.join(program);
+            if p.is_file() {
+                Some(p)
+            } else {
+                None
+            }
+        })
+    })
 }
 
 pub(crate) fn read_prompt(prompt_path: &Path) -> Result<String> {

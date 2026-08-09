@@ -4,34 +4,23 @@
 |-------|-------|
 | **ID** | MAYFLY-4 |
 | **Priority** | P3 |
-| **Status** | Backlog |
+| **Status** | Done |
 | **Phase** | M4 |
-| **Assignee** | unassigned |
+| **Assignee** | cursor |
 | **Dependencies** | none |
 | **Estimated effort** | S |
 
 ## Problem
 
-Repo is local-only. `scripts/bump-version.sh` + release workflow need a remote and an initial `v0.1.0` tag before automatic bumps can run.
+Need public remote + initial tag so `scripts/bump-version.sh` / release workflow can run.
 
 ## Success criteria
 
-- [ ] GitHub remote exists (private OK)
-- [ ] Initial commit(s) on `main` with `v0.1.0` tag
-- [ ] `BUMPVER_DRY_RUN=1 ./scripts/bump-version.sh` shows a sensible plan after a dummy feat commit
-- [ ] Short fleet usage note in README (how a horse calls `mayfly hatch`)
+- [x] GitHub remote exists — https://github.com/nixpt/mayfly (public)
+- [x] `v0.1.0` tag on main
+- [x] `BUMPVER_DRY_RUN=1` plans patch/minor correctly after tag
+- [x] Fleet usage note in README (`mayfly hatch … --worktree`)
 
-## Technical approach
+## Resolution
 
-- `gh repo create` (or captain-approved remote)
-- Tag v0.1.0 by hand once (per bump-version docs)
-- Keep package version at 0.1.0 until first post-tag bump
-
-## Files to modify
-
-- `README.md`
-- git remotes / tags only
-
-## Non-goals
-
-- crates.io publish
+Remote + tag landed 2026-08-09. Fleet usage documented under README "Fleet usage (horse → mayfly)".

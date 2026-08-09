@@ -129,11 +129,13 @@ expire(child) -> ExitReport
 
 | harness | spawn sketch |
 |---------|----------------|
-| `claude` | `claude -p "$(cat prompt)" --output-format text` |
-| `cursor` | `cursor-agent -p --yolo --trust "$(cat prompt)"` |
-| `codex` | `codex exec --full-auto --skip-git-repo-check "$(cat prompt)"` |
-| `cece` | `cece-rs …` (fleet-local) |
+| `claude` | `claude -p … --output-format text --dangerously-skip-permissions` |
+| `cursor` | `cursor-agent -p --yolo --trust …` |
+| `codex` | `codex exec --sandbox workspace-write --skip-git-repo-check …` (`--full-auto` deprecated) |
+| `cece` | `cece-rs --prompt-file …` (fleet-local) |
 | `exec` | no LLM — run `done_when.command` only (dry sanity) |
+
+Live smoke: `./scripts/smoke-harness.sh <harness>` (see README matrix for last-verified dates).
 
 Adapters never interpret the task. mayfly owns policy; adapters own argv.
 

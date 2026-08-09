@@ -11,6 +11,7 @@ impl Adapter for Claude {
     }
 
     fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan> {
+        // Align with squadron/bin/agent-launch claude runner: headless -p + skip perms.
         let prompt = super::read_prompt(prompt_path)?;
         Ok(SpawnPlan {
             harness: self.name().into(),
@@ -20,6 +21,7 @@ impl Adapter for Claude {
                 prompt,
                 "--output-format".into(),
                 "text".into(),
+                "--dangerously-skip-permissions".into(),
             ],
             cwd: Path::new(&task.cwd).to_path_buf(),
             prompt_path: prompt_path.to_path_buf(),

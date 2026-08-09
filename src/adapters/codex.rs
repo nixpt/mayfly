@@ -11,14 +11,15 @@ impl Adapter for Codex {
     }
 
     fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan> {
-        // Matches squadron/bin/agent-launch: codex exec --full-auto --skip-git-repo-check
+        // `--full-auto` is deprecated on current codex-cli; use workspace-write sandbox.
         let prompt = super::read_prompt(prompt_path)?;
         Ok(SpawnPlan {
             harness: self.name().into(),
             program: "codex".into(),
             args: vec![
                 "exec".into(),
-                "--full-auto".into(),
+                "--sandbox".into(),
+                "workspace-write".into(),
                 "--skip-git-repo-check".into(),
                 prompt,
             ],

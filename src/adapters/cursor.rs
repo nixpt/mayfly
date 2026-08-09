@@ -11,7 +11,8 @@ impl Adapter for Cursor {
     }
 
     fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan> {
-        // Matches squadron/bin/agent-launch: cursor-agent -p --yolo --trust
+        // agent-launch: cursor-agent -p --yolo --trust "$(cat prompt)"
+        // Live-verified 2026-08-09 (cursor-agent 2026.08.04-aaa8809).
         let prompt = super::read_prompt(prompt_path)?;
         Ok(SpawnPlan {
             harness: self.name().into(),

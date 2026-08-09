@@ -40,3 +40,13 @@ Rejected alternatives:
 - **firefly spark as hatch sandbox**: wrong product boundary; mayfly is the agent loop outside the room
 - **reimplement git worktree inside mayfly**: would fork buckets
 
+
+## 2026-08-09T00:22:33-05:00 — Align harness argv with live CLIs; smoke fails honestly on auth
+
+Reason:
+codex --full-auto is deprecated (use --sandbox workspace-write); claude headless needs --dangerously-skip-permissions. Live smoke proved cursor OK; claude/codex launch but need valid credentials — mayfly should surface that, not hang.
+
+Rejected alternatives:
+- **skip live smoke until all auths green**: hides argv drift
+- **keep --full-auto forever**: warns and may vanish
+
