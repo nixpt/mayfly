@@ -2,9 +2,9 @@
 
 > Short-lived agents. One task. Then gone.
 
-**Status:** v0.1.1 released ([nixpt/mayfly](https://github.com/nixpt/mayfly)).
+**Status:** foundation arc closed at v0.1.2 ([nixpt/mayfly](https://github.com/nixpt/mayfly)).
 Core hatch loop + buckets worktree + live adapters shipped. MAYFLY-2 (aging
-*inject*) remains optional post-release polish — aging *states* already flip.
+*inject*) remains optional backlog — aging *states* already flip.
 
 ## Problem
 

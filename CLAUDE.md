@@ -2,7 +2,7 @@
 
 Short-lived agents. One task. Then gone.
 
-**Release:** v0.1.1 — https://github.com/nixpt/mayfly
+**Release:** v0.1.2 — https://github.com/nixpt/mayfly (foundation arc closed)
 
 ## Project memory
 

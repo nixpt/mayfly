@@ -33,7 +33,9 @@ mayfly hatch examples/exec-true.json
 MAYFLY_BIN=./target/release/mayfly ./scripts/smoke-harness.sh cursor
 ```
 
-Install from release: `cargo install --git https://github.com/nixpt/mayfly --tag v0.1.1`
+Install from release: `cargo install --git https://github.com/nixpt/mayfly --tag v0.1.2`
+
+Foundation epoch closed 2026-08-09 — no active milestone; MAYFLY-2 is optional backlog.
 
 ## Architecture Map
 

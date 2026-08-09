@@ -6,9 +6,10 @@ Living plan. Dejavue holds *why*; this file holds *sequence*.
 
 A harness-agnostic launcher for ephemeral single-purpose agents: validate a concrete task, hatch into Cursor/Claude/Codex/OpenCode/…, watch a mechanical `done_when` + hard TTL, tear down, leave only artifacts.
 
-## Current phase: released (v0.1.1)
+## Current phase: foundation arc CLOSED (v0.1.2)
 
-M0–M2 + fleet docs are in **v0.1.1**. Next work is optional polish (MAYFLY-2 aging inject), not a release gate.
+M0–M2 + fleet docs shipped through **v0.1.2**. No active milestone — pick up
+MAYFLY-2 (or a new ask) only when someone owns it.
 
 ---
 
@@ -37,5 +38,6 @@ M0–M2 + fleet docs are in **v0.1.1**. Next work is optional polish (MAYFLY-2 a
 | Tag | Maps to |
 |-----|---------|
 | v0.1.0 | Initial public scaffold + `--worktree` |
-| v0.1.1 | Live adapters (ccf/cxf/opencode/…), smoke harness, docs |
+| v0.1.1 | Live adapters (ccf/cxf/opencode/…), smoke harness |
+| v0.1.2 | Docs/dejavue sync; foundation arc closed |
 | later | MAYFLY-2 aging inject if/when needed |
