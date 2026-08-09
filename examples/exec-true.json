@@ -1,0 +1,11 @@
+{
+  "task": "Prove done_when works: confirm examples/fix-test.json exists",
+  "done_when": {
+    "type": "command",
+    "run": "test -f examples/fix-test.json",
+    "expect_exit": 0
+  },
+  "harness": "exec",
+  "cwd": ".",
+  "ttl": "30s"
+}

@@ -1,0 +1,10 @@
+{
+  "task": "Improve the codebase and also make the docs feel better",
+  "done_when": {
+    "type": "command",
+    "run": "true",
+    "expect_exit": 0
+  },
+  "harness": "claude",
+  "ttl": "3h"
+}

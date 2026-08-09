@@ -1,0 +1,23 @@
+[package]
+name = "mayfly"
+version = "0.1.0"
+description = "Short-lived agents for Cursor, Claude, Codex, and friends — one task, then gone"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["agent", "harness", "ephemeral", "mayfly"]
+categories = ["command-line-utilities", "development-tools"]
+
+[[bin]]
+name = "mayfly"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+clap = { version = "4", features = ["derive", "env"] }
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+uuid = { version = "1", features = ["v4"] }

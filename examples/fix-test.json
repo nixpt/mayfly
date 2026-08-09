@@ -1,0 +1,17 @@
+{
+  "task": "Fix the failing unit test in foo::bar::test_baz so cargo test passes",
+  "done_when": {
+    "type": "command",
+    "run": "cargo test -p foo bar::test_baz -- --exact",
+    "expect_exit": 0
+  },
+  "harness": "claude",
+  "cwd": ".",
+  "ttl": "15m",
+  "budget": { "max_turns": 30 },
+  "constraints": {
+    "no_spawn": true,
+    "no_commit_to": ["main", "master", "dev"],
+    "paths_allow": ["src/"]
+  }
+}

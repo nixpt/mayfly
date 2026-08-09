@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nixpt.dev/mayfly/schemas/task.schema.json",
+  "title": "MayflyTask",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task", "done_when", "harness"],
+  "properties": {
+    "task": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 500,
+      "description": "Single concrete purpose. No open-ended polish verbs."
+    },
+    "done_when": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "run"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "command" },
+            "run": { "type": "string", "minLength": 1 },
+            "expect_exit": { "type": "integer", "default": 0 }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "paths"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "const": "files_exist" },
+            "paths": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "harness": {
+      "type": "string",
+      "enum": ["claude", "cursor", "codex", "cece", "exec"]
+    },
+    "cwd": { "type": "string", "default": "." },
+    "ttl": {
+      "type": "string",
+      "pattern": "^[0-9]+(s|m|h)$",
+      "default": "15m",
+      "description": "Hard lifespan. Max 2h."
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_turns": { "type": "integer", "minimum": 1 },
+        "max_usd": { "type": "number", "minimum": 0 }
+      }
+    },
+    "aging": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "warn_at": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
+        "narrow_at": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.75 }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["diff", "log", "stdout"] },
+      "default": ["diff", "log"]
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "no_spawn": { "type": "boolean", "default": true },
+        "no_commit_to": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["main", "master", "dev"]
+        },
+        "paths_allow": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+//! Harness adapters — argv only. Policy lives in mayfly.
+
+mod cece;
+mod claude;
+mod codex;
+mod cursor;
+mod exec;
+
+use crate::task::{Harness, MayflyTask};
+use anyhow::Result;
+use serde::Serialize;
+use std::path::{Path, PathBuf};
+use std::process::{Child, Command, Stdio};
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SpawnPlan {
+    pub harness: String,
+    pub program: String,
+    pub args: Vec<String>,
+    pub cwd: PathBuf,
+    pub prompt_path: PathBuf,
+}
+
+pub trait Adapter {
+    fn name(&self) -> &'static str;
+    fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan>;
+}
+
+pub fn for_harness(h: Harness) -> Box<dyn Adapter> {
+    match h {
+        Harness::Claude => Box::new(claude::Claude),
+        Harness::Cursor => Box::new(cursor::Cursor),
+        Harness::Codex => Box::new(codex::Codex),
+        Harness::Cece => Box::new(cece::Cece),
+        Harness::Exec => Box::new(exec::Exec),
+    }
+}
+
+pub fn spawn(plan: &SpawnPlan) -> Result<Child> {
+    let mut cmd = Command::new(&plan.program);
+    cmd.args(&plan.args)
+        .current_dir(&plan.cwd)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    Ok(cmd.spawn()?)
+}
+
+pub(crate) fn read_prompt(prompt_path: &Path) -> Result<String> {
+    Ok(std::fs::read_to_string(prompt_path)?)
+}
