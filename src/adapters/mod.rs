@@ -56,8 +56,26 @@ pub fn spawn(plan: &SpawnPlan) -> Result<Child> {
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    cmd.spawn()
-        .with_context(|| format!("failed to spawn harness '{}' (`{}`)", plan.harness, plan.program))
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        unsafe {
+            cmd.pre_exec(|| {
+                if libc::setpgid(0, 0) == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+    }
+
+    cmd.spawn().with_context(|| {
+        format!(
+            "failed to spawn harness '{}' (`{}`)",
+            plan.harness, plan.program
+        )
+    })
 }
 
 fn which(program: &str) -> Option<PathBuf> {
