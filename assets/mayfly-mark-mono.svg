@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">mayfly monochrome mark</title>
+  <desc id="desc">A compact monochrome geometric mayfly mark.</desc>
+  <path fill="currentColor" d="M256 36c18 0 32 14 32 32v112l50-91c9-16 29-22 45-13s22 29 13 45l-61 111 104-60c16-9 36-4 45 12s4 36-12 45l-95 55 96 55c16 9 21 29 12 45s-29 21-45 12l-104-60 61 111c9 16 3 36-13 45s-36 3-45-13l-50-91v112c0 18-14 32-32 32s-32-14-32-32V336l-50 91c-9 16-29 22-45 13s-22-29-13-45l61-111-104 60c-16 9-36 4-45-12s-4-36 12-45l95-55-96-55c-16-9-21-29-12-45s29-21 45-12l104 60-61-111c-9-16-3-36 13-45s36-3 45 13l50 91V68c0-18 14-32 32-32Zm0 79c-9 0-16 7-16 16v148c0 9 7 16 16 16s16-7 16-16V131c0-9-7-16-16-16Zm-16 194h32v105h-32V309Z"/>
+</svg>
