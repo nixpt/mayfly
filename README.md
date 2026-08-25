@@ -1,5 +1,9 @@
 # mayfly
 
+<picture>
+  <img src="assets/mayfly-logo.svg" alt="mayfly" width="520">
+</picture>
+
 **Short-lived agents. One task. Then gone.**
 
 Ephemeral single-purpose workers for Cursor, Claude, Codex, OpenCode, and friends.
@@ -139,6 +143,22 @@ Self-contained: no path deps on peer projects.
 | `.jagent/` | planning board — `MAYFLY-NN` tickets in `.jagent/planning/` |
 | `scripts/bump-version.sh` | conventional-commit bumps on push to `main` (see `.github/workflows/release.yml`) |
 
+## Brand assets
+
+The project logo, monochrome mark, and social preview are in [`assets/`](assets/). See [`assets/README.md`](assets/README.md) for usage and palette details.
+
 ## License
 
-MIT OR Apache-2.0
+Licensed under either of
+
+- Apache License, Version 2.0 ([`LICENSE-APACHE`](LICENSE-APACHE) or
+  <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([`LICENSE-MIT`](LICENSE-MIT) or
+  <http://opensource.org/licenses/MIT>)
+
+at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally
+submitted for inclusion in this work by you, as defined in the Apache-2.0
+license, shall be dual licensed as above, without any additional terms or
+conditions.

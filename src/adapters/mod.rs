@@ -103,8 +103,28 @@ pub fn spawn(plan: &SpawnPlan) -> Result<HarnessHandle> {
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    let child = cmd.spawn()
-        .with_context(|| format!("failed to spawn harness '{}' (`{}`) ", plan.harness, plan.program))?;
+    // main's process-group isolation (MAYFLY-6): put the child in its own
+    // pgid so teardown can signal the whole group, not just the direct child.
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        unsafe {
+            cmd.pre_exec(|| {
+                if libc::setpgid(0, 0) == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+    }
+
+    // MAYFLY-5's local/remote split: a spawned process is the Local arm.
+    let child = cmd.spawn().with_context(|| {
+        format!(
+            "failed to spawn harness '{}' (`{}`)",
+            plan.harness, plan.program
+        )
+    })?;
     Ok(HarnessHandle::Local { child })
 }
 
