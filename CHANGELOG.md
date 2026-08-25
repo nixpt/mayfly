@@ -11,6 +11,14 @@ rather than written at the time.
 
 ## [Unreleased]
 
+### Fixed
+- Added the missing `LICENSE-APACHE`. `Cargo.toml` and the README have both
+  declared `MIT OR Apache-2.0` since the first release, but only `LICENSE-MIT`
+  shipped — so GitHub detected the repo as MIT-only and anyone relying on the
+  Apache-2.0 half had no text to rely on. Adding the file rather than narrowing
+  the claim, since the dual grant was already published and every sibling
+  project (`buckets`, `checkstand`, `crush-ast`) ships both.
+
 ## [0.1.6] - 2026-08-25
 
 - Merge pull request #5 from nixpt/agent/buffy/MAYFLY-6
