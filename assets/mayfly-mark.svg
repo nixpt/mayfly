@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">mayfly mark</title>
+  <desc id="desc">A compact geometric mayfly with two wings and a central flight path.</desc>
+  <defs>
+    <linearGradient id="wing" x1="76" y1="72" x2="438" y2="440" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#16B8A6"/>
+      <stop offset="1" stop-color="#087F8C"/>
+    </linearGradient>
+  </defs>
+  <path fill="#101820" d="M256 36c18 0 32 14 32 32v112l50-91c9-16 29-22 45-13s22 29 13 45l-61 111 104-60c16-9 36-4 45 12s4 36-12 45l-95 55 96 55c16 9 21 29 12 45s-29 21-45 12l-104-60 61 111c9 16 3 36-13 45s-36 3-45-13l-50-91v112c0 18-14 32-32 32s-32-14-32-32V336l-50 91c-9 16-29 22-45 13s-22-29-13-45l61-111-104 60c-16 9-36 4-45-12s-4-36 12-45l95-55-96-55c-16-9-21-29-12-45s29-21 45-12l104 60-61-111c-9-16-3-36 13-45s36-3 45 13l50 91V68c0-18 14-32 32-32Z"/>
+  <path fill="url(#wing)" d="M256 115c9 0 16 7 16 16v148c0 9-7 16-16 16s-16-7-16-16V131c0-9 7-16 16-16Z"/>
+  <circle cx="256" cy="256" r="28" fill="#F7C948"/>
+  <path fill="#F7C948" d="M240 309h32v105h-32z"/>
+</svg>
