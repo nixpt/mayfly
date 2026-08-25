@@ -4,6 +4,7 @@ mod ccf;
 mod cece;
 mod claude;
 mod codex;
+mod copilot;
 mod cursor;
 mod cxf;
 mod exec;
@@ -11,7 +12,7 @@ mod opencode;
 
 use crate::task::{Harness, MayflyTask};
 use anyhow::{bail, Context, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 
@@ -24,9 +25,54 @@ pub struct SpawnPlan {
     pub prompt_path: PathBuf,
 }
 
+/// Local or remote execution handle.
+#[derive(Debug)]
+pub enum HarnessHandle {
+    /// A local Child process (Cursor, Claude, Codex, etc.)
+    Local { child: Child },
+    /// A remote GitHub API task (Copilot cloud agent, GitHub Actions job, etc.)
+    Remote {
+        /// Task identifier (e.g., issue number, PR number, commit SHA)
+        task_id: String,
+        /// Where to poll status and how
+        polling_strategy: RemoteStrategy,
+        /// Adapter-specific metadata (repo, branch, etc.)
+        metadata: serde_json::Value,
+    },
+}
+
+/// Strategy for polling a remote agent's status.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum RemoteStrategy {
+    /// Poll GitHub Copilot custom agent assignment status via `gh` API
+    CopilotCloudAgent {
+        /// org/repo where the agent is defined (e.g., "my-org/.github-private")
+        agent_repo: String,
+        /// Issue or PR number to track
+        pr_or_issue_number: u64,
+    },
+    /// Poll GitHub Actions check-run status for CI workflow result
+    GitHubActionsCheckRun {
+        /// Repository "owner/repo"
+        repo: String,
+        /// Commit SHA to query runs against
+        commit_sha: String,
+    },
+}
+
 pub trait Adapter {
     fn name(&self) -> &'static str;
     fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan>;
+    /// Override for adapters that spawn remote tasks instead of local processes.
+    /// Default: None (use traditional spawn).
+    fn spawn_remote(
+        &self,
+        _task: &MayflyTask,
+        _prompt_path: &Path,
+    ) -> Result<Option<HarnessHandle>> {
+        Ok(None)
+    }
 }
 
 pub fn for_harness(h: Harness) -> Box<dyn Adapter> {
@@ -39,10 +85,11 @@ pub fn for_harness(h: Harness) -> Box<dyn Adapter> {
         Harness::Cece => Box::new(cece::Cece),
         Harness::Opencode => Box::new(opencode::Opencode),
         Harness::Exec => Box::new(exec::Exec),
+        Harness::Copilot => Box::new(copilot::Copilot),
     }
 }
 
-pub fn spawn(plan: &SpawnPlan) -> Result<Child> {
+pub fn spawn(plan: &SpawnPlan) -> Result<HarnessHandle> {
     if which(&plan.program).is_none() {
         bail!(
             "harness '{}' binary `{}` not found on PATH — install it or pick another harness",
@@ -56,8 +103,9 @@ pub fn spawn(plan: &SpawnPlan) -> Result<Child> {
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    cmd.spawn()
-        .with_context(|| format!("failed to spawn harness '{}' (`{}`)", plan.harness, plan.program))
+    let child = cmd.spawn()
+        .with_context(|| format!("failed to spawn harness '{}' (`{}`) ", plan.harness, plan.program))?;
+    Ok(HarnessHandle::Local { child })
 }
 
 fn which(program: &str) -> Option<PathBuf> {
