@@ -6,12 +6,13 @@ use crate::store::{HatchRecord, HatchState, HatchStore};
 use crate::task::{DoneWhen, MayflyTask};
 use crate::ttl::parse_ttl;
 use crate::worktree::{self, ProvisionedWorktree, WorktreeSpec};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use chrono::Utc;
 use serde::Serialize;
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::Child;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
@@ -58,11 +59,113 @@ struct Planned {
     ttl: Duration,
 }
 
-pub fn plan_hatch(
-    store: &HatchStore,
-    task: &MayflyTask,
-    opts: &HatchOpts,
-) -> Result<HatchPlanOut> {
+const OUTPUT_TAIL_LIMIT: usize = 64 * 1024;
+
+struct OutputCapture {
+    stdout: Arc<Mutex<Vec<u8>>>,
+    stderr: Arc<Mutex<Vec<u8>>>,
+    readers: Option<Vec<thread::JoinHandle<()>>>,
+}
+
+impl OutputCapture {
+    fn start(child: &mut Child) -> Result<Self> {
+        let stdout = Arc::new(Mutex::new(Vec::new()));
+        let stderr = Arc::new(Mutex::new(Vec::new()));
+        let mut readers = Vec::new();
+
+        if let Some(out) = child.stdout.take() {
+            readers.push(spawn_reader(out, Arc::clone(&stdout))?);
+        }
+        if let Some(err) = child.stderr.take() {
+            readers.push(spawn_reader(err, Arc::clone(&stderr))?);
+        }
+
+        Ok(Self {
+            stdout,
+            stderr,
+            readers: Some(readers),
+        })
+    }
+
+    fn finish(&mut self) -> (String, String) {
+        if let Some(readers) = self.readers.take() {
+            for reader in readers {
+                let _ = reader.join();
+            }
+        }
+        let stdout = self
+            .stdout
+            .lock()
+            .map(|bytes| bytes.clone())
+            .unwrap_or_default();
+        let stderr = self
+            .stderr
+            .lock()
+            .map(|bytes| bytes.clone())
+            .unwrap_or_default();
+        (
+            String::from_utf8_lossy(&stdout).into_owned(),
+            String::from_utf8_lossy(&stderr).into_owned(),
+        )
+    }
+}
+
+fn spawn_reader<R>(mut reader: R, target: Arc<Mutex<Vec<u8>>>) -> Result<thread::JoinHandle<()>>
+where
+    R: Read + Send + 'static,
+{
+    Ok(thread::spawn(move || {
+        let mut buf = [0u8; 8192];
+        loop {
+            match reader.read(&mut buf) {
+                Ok(0) | Err(_) => break,
+                Ok(n) => {
+                    if let Ok(mut output) = target.lock() {
+                        output.extend_from_slice(&buf[..n]);
+                        if output.len() > OUTPUT_TAIL_LIMIT {
+                            let excess = output.len() - OUTPUT_TAIL_LIMIT;
+                            output.drain(..excess);
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    }))
+}
+
+struct WorktreeCleanup {
+    worktree: Option<ProvisionedWorktree>,
+}
+
+impl WorktreeCleanup {
+    fn new(worktree: Option<ProvisionedWorktree>) -> Self {
+        Self { worktree }
+    }
+
+    fn path(&self) -> Option<String> {
+        self.worktree
+            .as_ref()
+            .map(|worktree| worktree.path.display().to_string())
+    }
+
+    fn take(&mut self) -> Option<ProvisionedWorktree> {
+        self.worktree.take()
+    }
+}
+
+impl Drop for WorktreeCleanup {
+    fn drop(&mut self) {
+        if let Some(worktree) = self.worktree.take() {
+            if let Err(error) = worktree::remove(&worktree) {
+                eprintln!("mayfly: worktree cleanup warning: {error:#}");
+            }
+        }
+    }
+}
+
+pub fn plan_hatch(store: &HatchStore, task: &MayflyTask, opts: &HatchOpts) -> Result<HatchPlanOut> {
     let planned = prepare(store, task, None)?;
     let (wt_repo, wt_branch) = match &opts.worktree {
         Some(spec) => (
@@ -116,6 +219,7 @@ pub fn run_hatch(
         }
         None
     };
+    let mut cleanup = WorktreeCleanup::new(provisioned);
 
     // Re-plan spawn against the (possibly new) cwd.
     let prompt_path = planned.dir.join("prompt.txt");
@@ -136,35 +240,61 @@ pub fn run_hatch(
         pid: None,
         expire_reason: None,
         dir: planned.dir.clone(),
-        worktree_repo: provisioned.as_ref().map(|w| w.repo.display().to_string()),
-        worktree_path: provisioned.as_ref().map(|w| w.path.display().to_string()),
-        worktree_branch: provisioned.as_ref().map(|w| w.branch.clone()),
-        worktree_keep: provisioned.as_ref().map(|w| w.keep).unwrap_or(false),
+        worktree_repo: cleanup
+            .worktree
+            .as_ref()
+            .map(|w| w.repo.display().to_string()),
+        worktree_path: cleanup.path(),
+        worktree_branch: cleanup.worktree.as_ref().map(|w| w.branch.clone()),
+        worktree_keep: cleanup.worktree.as_ref().map(|w| w.keep).unwrap_or(false),
     };
     store.save(&rec)?;
 
-    let mut child = adapters::spawn(&spawn).with_context(|| {
-        format!("spawn {} ({})", spawn.program, spawn.harness)
-    })?;
-    rec.pid = Some(child.id());
-    store.save(&rec)?;
+    let result = (|| {
+        let mut child = adapters::spawn(&spawn)
+            .with_context(|| format!("spawn {} ({})", spawn.program, spawn.harness))?;
+        rec.pid = Some(child.id());
+        if let Err(error) = store.save(&rec) {
+            terminate_child(&mut child);
+            return Err(error);
+        }
+        let mut output = match OutputCapture::start(&mut child) {
+            Ok(output) => output,
+            Err(error) => {
+                terminate_child(&mut child);
+                return Err(error);
+            }
+        };
 
-    let mut report = watch(store, &mut rec, &task, &mut child, planned.ttl)?;
-    report.worktree_path = provisioned.as_ref().map(|w| w.path.display().to_string());
+        let watch_result = watch(store, &mut rec, &task, &mut child, &mut output, planned.ttl);
+        if watch_result.is_err() {
+            terminate_child(&mut child);
+            let _ = output.finish();
+        }
+        let mut report = watch_result?;
+        report.worktree_path = cleanup.path();
+        Ok(report)
+    })();
 
-    if let Some(wt) = provisioned {
-        if let Err(e) = teardown_worktree(store, &mut rec, &wt) {
-            eprintln!("mayfly: worktree teardown warning: {e:#}");
+    if let Some(wt) = cleanup.worktree.clone() {
+        match teardown_worktree(store, &mut rec, &wt) {
+            Ok(()) => {
+                let _ = cleanup.take();
+            }
+            Err(e) => {
+                eprintln!("mayfly: worktree teardown warning: {e:#}");
+                if result.is_ok() {
+                    return Err(e.context("teardown worktree"));
+                }
+            }
         }
     }
 
-    Ok(report)
+    result
 }
 
 pub fn expire_hatch(store: &HatchStore, id: &str, reason: &str) -> Result<()> {
-    let mut rec = store
-        .get(id)?
-        .with_context(|| format!("no hatch {id}"))?;
+    let mut rec = store.get(id)?.with_context(|| format!("no hatch {id}"))?;
     if let Some(pid) = rec.pid {
         let _ = term_pid(pid);
     }
@@ -182,6 +312,7 @@ pub fn expire_hatch(store: &HatchStore, id: &str, reason: &str) -> Result<()> {
         let _ = teardown_worktree(store, &mut rec, &wt);
     }
     rec.state = HatchState::Expired;
+    rec.pid = None;
     rec.expire_reason = Some(reason.into());
     rec.updated_at = Utc::now();
     store.save(&rec)?;
@@ -202,11 +333,7 @@ fn teardown_worktree(
     Ok(())
 }
 
-fn prepare(
-    store: &HatchStore,
-    task: &MayflyTask,
-    reuse_id: Option<&str>,
-) -> Result<Planned> {
+fn prepare(store: &HatchStore, task: &MayflyTask, reuse_id: Option<&str>) -> Result<Planned> {
     let id = reuse_id
         .map(|s| s.to_string())
         .unwrap_or_else(|| format!("mf-{}", &Uuid::new_v4().to_string()[..8]));
@@ -235,6 +362,7 @@ fn watch(
     rec: &mut HatchRecord,
     task: &MayflyTask,
     child: &mut Child,
+    output: &mut OutputCapture,
     ttl: Duration,
 ) -> Result<HatchReport> {
     let started = Instant::now();
@@ -245,8 +373,8 @@ fn watch(
         let life = started.elapsed().as_secs_f64() / ttl.as_secs_f64().max(0.001);
 
         if life >= 1.0 {
-            let _ = child.kill();
-            let _ = child.wait();
+            terminate_child(child);
+            let (stdout_tail, stderr_tail) = output.finish();
             rec.state = HatchState::Expired;
             rec.expire_reason = Some("ttl_exceeded".into());
             rec.updated_at = Utc::now();
@@ -257,8 +385,8 @@ fn watch(
                 state: HatchState::Expired,
                 exit_code: Some(124),
                 reason: "ttl_exceeded".into(),
-                stdout_tail: String::new(),
-                stderr_tail: String::new(),
+                stdout_tail: tail(&stdout_tail, 2000),
+                stderr_tail: tail(&stderr_tail, 2000),
                 worktree_path: rec.worktree_path.clone(),
             });
         }
@@ -277,7 +405,11 @@ fn watch(
 
         match child.try_wait()? {
             Some(status) => {
-                let (stdout_tail, stderr_tail) = drain_output(child);
+                // A harness may leave descendants holding our pipes open after
+                // the direct child exits. End the process group before joining
+                // the output readers so hatch completion cannot hang.
+                terminate_child(child);
+                let (stdout_tail, stderr_tail) = output.finish();
                 let code = status.code();
                 let is_exec = matches!(task.harness, crate::task::Harness::Exec);
                 let done_ok = if is_exec {
@@ -285,8 +417,8 @@ fn watch(
                 } else {
                     check_done_when(task, Duration::from_secs(5))?
                 };
-                let saw_marker = stdout_tail.contains("MAYFLY_DONE")
-                    || stderr_tail.contains("MAYFLY_DONE");
+                let saw_marker =
+                    stdout_tail.contains("MAYFLY_DONE") || stderr_tail.contains("MAYFLY_DONE");
                 let success = status.success() && (done_ok || saw_marker || is_exec);
 
                 rec.state = if success {
@@ -321,8 +453,8 @@ fn watch(
                 if !matches!(task.harness, crate::task::Harness::Exec)
                     && check_done_when(task, Duration::from_secs(5))?
                 {
-                    let _ = child.kill();
-                    let _ = child.wait();
+                    terminate_child(child);
+                    let (stdout_tail, stderr_tail) = output.finish();
                     rec.state = HatchState::Done;
                     rec.expire_reason = Some("done_when satisfied".into());
                     rec.pid = None;
@@ -334,8 +466,8 @@ fn watch(
                         state: HatchState::Done,
                         exit_code: Some(0),
                         reason: "done_when satisfied".into(),
-                        stdout_tail: String::new(),
-                        stderr_tail: String::new(),
+                        stdout_tail: tail(&stdout_tail, 2000),
+                        stderr_tail: tail(&stderr_tail, 2000),
                         worktree_path: rec.worktree_path.clone(),
                     });
                 }
@@ -364,23 +496,19 @@ fn check_done_when(task: &MayflyTask, timeout: Duration) -> Result<bool> {
     }
 }
 
-fn drain_output(child: &mut Child) -> (String, String) {
-    let mut stdout = String::new();
-    let mut stderr = String::new();
-    if let Some(mut out) = child.stdout.take() {
-        let _ = out.read_to_string(&mut stdout);
-    }
-    if let Some(mut err) = child.stderr.take() {
-        let _ = err.read_to_string(&mut stderr);
-    }
-    (stdout, stderr)
+fn terminate_child(child: &mut Child) {
+    let pid = child.id();
+    let _ = term_pid(pid);
+    let _ = child.kill();
+    let _ = child.wait();
 }
 
 fn tail(s: &str, max: usize) -> String {
-    if s.len() <= max {
+    let bytes = s.as_bytes();
+    if bytes.len() <= max {
         s.to_string()
     } else {
-        s[s.len() - max..].to_string()
+        String::from_utf8_lossy(&bytes[bytes.len() - max..]).into_owned()
     }
 }
 
@@ -397,11 +525,83 @@ fn redact_args(args: &[String]) -> Vec<String> {
 }
 
 fn term_pid(pid: u32) -> Result<()> {
-    let status = std::process::Command::new("kill")
-        .args(["-TERM", &pid.to_string()])
-        .status()?;
-    if !status.success() {
-        bail!("kill -TERM {pid} failed");
+    #[cfg(unix)]
+    {
+        let rc = unsafe { libc::kill(-(pid as libc::pid_t), libc::SIGTERM) };
+        if rc == -1 {
+            let error = std::io::Error::last_os_error();
+            if error.raw_os_error() != Some(libc::ESRCH) {
+                return Err(error.into());
+            }
+        }
+        return Ok(());
     }
-    Ok(())
+
+    #[cfg(not(unix))]
+    {
+        let status = std::process::Command::new("kill")
+            .args(["-TERM", &pid.to_string()])
+            .status()?;
+        if !status.success() {
+            bail!("kill -TERM {pid} failed");
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::process::{Command, Stdio};
+
+    #[test]
+    fn output_capture_drains_large_streams_and_keeps_tail() {
+        let mut child = Command::new("sh")
+            .args([
+                "-c",
+                "head -c 200000 /dev/zero | tr '\\0' o; printf stdout-tail; head -c 200000 /dev/zero | tr '\\0' e >&2; printf stderr-tail >&2",
+            ])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("spawn output fixture");
+        let mut output = OutputCapture::start(&mut child).expect("start output capture");
+        child.wait().expect("wait output fixture");
+        let (stdout, stderr) = output.finish();
+
+        assert!(stdout.ends_with("stdout-tail"));
+        assert!(stderr.ends_with("stderr-tail"));
+        assert!(stdout.len() <= OUTPUT_TAIL_LIMIT);
+        assert!(stderr.len() <= OUTPUT_TAIL_LIMIT);
+    }
+
+    #[test]
+    fn tail_handles_utf8_boundary_without_panicking() {
+        let value = "prefix ✓ suffix";
+        let result = tail(value, 4);
+        assert!(result.ends_with("fix"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn terminate_child_stops_background_descendants() {
+        let mut child = crate::adapters::spawn(&crate::adapters::SpawnPlan {
+            harness: "test".into(),
+            program: "sh".into(),
+            args: vec!["-c".into(), "sleep 30 & wait".into()],
+            cwd: PathBuf::from("."),
+            prompt_path: PathBuf::new(),
+        })
+        .expect("spawn process-group fixture");
+        let mut output = OutputCapture::start(&mut child).expect("start output capture");
+
+        thread::sleep(Duration::from_millis(50));
+        terminate_child(&mut child);
+        let _ = output.finish();
+
+        assert!(child
+            .try_wait()
+            .expect("poll process-group fixture")
+            .is_some());
+    }
 }
