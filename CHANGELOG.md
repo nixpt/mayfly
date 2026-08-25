@@ -11,6 +11,14 @@ rather than written at the time.
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-08-25
+
+- Merge pull request #5 from nixpt/agent/buffy/MAYFLY-6
+- Merge main into agent/buffy/MAYFLY-6 — resolve the v0.1.5 conflict
+- fix(MAYFLY-6): harden local hatch lifecycle
+
+
+
 ## [0.1.5] - 2026-08-25
 
 ### Security
