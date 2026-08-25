@@ -4,6 +4,12 @@ See `.jagent/planning/tickets/` for full details on each `MAYFLY-N` ID.
 
 ---
 
+## M5 — Local reliability
+
+- [ ] **MAYFLY-6** (M): Concurrent output capture, process-group expiry, and error-safe worktree cleanup. Implementation in progress on `agent/buffy/MAYFLY-6`.
+
+---
+
 ## P0 — Build & Core Health ✅
 
 - [x] `cargo test` / `cargo build --release`
