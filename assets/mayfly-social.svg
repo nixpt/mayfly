@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">mayfly social preview</title>
+  <desc id="desc">mayfly short-lived single-purpose agents.</desc>
+  <rect width="1200" height="630" fill="#101820"/>
+  <path fill="#172530" d="M0 0h1200v630H0z"/>
+  <path fill="#1D3540" d="M0 0h420v630H0z"/>
+  <g transform="translate(110 135) scale(.7)">
+    <path fill="#F5F8FA" d="M256 36c18 0 32 14 32 32v112l50-91c9-16 29-22 45-13s22 29 13 45l-61 111 104-60c16-9 36-4 45 12s4 36-12 45l-95 55 96 55c16 9 21 29 12 45s-29 21-45 12l-104-60 61 111c9 16 3 36-13 45s-36 3-45-13l-50-91v112c0 18-14 32-32 32s-32-14-32-32V336l-50 91c-9 16-29 22-45 13s-22-29-13-45l61-111-104 60c-16 9-36 4-45-12s-4-36 12-45l95-55-96-55c-16-9-21-29-12-45s29-21 45-12l104 60-61-111c-9-16-3-36 13-45s36-3 45 13l50 91V68c0-18 14-32 32-32Z"/>
+    <path fill="#16B8A6" d="M256 115c9 0 16 7 16 16v148c0 9-7 16-16 16s-16-7-16-16V131c0-9 7-16 16-16Z"/>
+    <circle cx="256" cy="256" r="28" fill="#F7C948"/>
+    <path fill="#F7C948" d="M240 309h32v105h-32z"/>
+  </g>
+  <text x="460" y="274" fill="#F5F8FA" font-family="Inter, ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="132" font-weight="700">mayfly</text>
+  <text x="466" y="352" fill="#9CB5BF" font-family="Inter, ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="34" font-weight="500">Short-lived agents. One task. Then gone.</text>
+  <rect x="466" y="402" width="116" height="8" rx="4" fill="#16B8A6"/>
+  <rect x="596" y="402" width="72" height="8" rx="4" fill="#F7C948"/>
+</svg>

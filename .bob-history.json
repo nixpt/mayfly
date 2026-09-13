@@ -1,0 +1,12 @@
+{
+  "workspace": "/workspace/projects/mayfly/Cargo.toml",
+  "crates": {
+    "mayfly": {
+      "avg_elapsed_ms": 9139.0,
+      "avg_actual_bytes": 379329538.0,
+      "builds": 1,
+      "kind": "bin"
+    }
+  },
+  "build_count": 1
+}
