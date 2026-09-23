@@ -50,6 +50,49 @@ pub fn project_root(dir: &Path) -> Option<PathBuf> {
     main_checkout(dir).filter(|root| root.join(".jagent").is_dir())
 }
 
+/// Where committed runner definitions live: the *current* worktree's top level, if it
+/// has adopted `.jagent/`. Definitions are versioned per branch, so a linked worktree
+/// reads and writes its own copy (MAYFLY-10). Only hatch *state* resolves to the main
+/// checkout (`project_root`), because run records are clone-local, not per-branch.
+pub fn defs_root(dir: &Path) -> Option<PathBuf> {
+    git(dir, &["rev-parse", "--show-toplevel"])
+        .map(PathBuf::from)
+        .filter(|root| root.join(".jagent").is_dir())
+        // a worktree of a branch that predates .jagent/ still gets the project's runners
+        .or_else(|| project_root(dir))
+}
+
+/// Insert `entries` as the last lines of the `[commit]` section. The header is matched as a
+/// whole line; text like "listed under [commit]" in a comment is not a header (MAYFLY-10:
+/// 0.2.0 matched a comment and wrote the entries mid-line).
+pub fn add_to_commit_section(text: &str, entries: &[&str]) -> String {
+    let mut lines: Vec<String> = text.lines().map(str::to_string).collect();
+    match lines.iter().position(|l| l.trim() == "[commit]") {
+        Some(h) => {
+            let mut end = h + 1;
+            while end < lines.len()
+                && !lines[end].trim().is_empty()
+                && !lines[end].trim_start().starts_with('[')
+            {
+                end += 1;
+            }
+            for (i, e) in entries.iter().enumerate() {
+                lines.insert(end + i, (*e).to_string());
+            }
+        }
+        None => {
+            lines.push(String::new());
+            lines.push("[commit]".into());
+            lines.extend(entries.iter().map(|e| (*e).to_string()));
+        }
+    }
+    let mut out = lines.join("\n");
+    if text.ends_with('\n') {
+        out.push('\n');
+    }
+    out
+}
+
 /// Where a hatch's records go, plus a warning to print (if any).
 ///
 /// Precedence: explicit (`--state-dir` or `MAYFLY_STATE_DIR`, already merged by clap)
@@ -238,13 +281,7 @@ pub fn init_runners(root: &Path) -> Result<(Vec<PathBuf>, Vec<String>)> {
         Ok(text) => {
             let missing: Vec<&str> = want.iter().copied().filter(|w| !text.contains(w)).collect();
             if !missing.is_empty() {
-                let updated = if let Some(pos) = text.find("[commit]") {
-                    let after = pos + "[commit]".len();
-                    let (head, tail) = text.split_at(after);
-                    format!("{head}\n{}{tail}", missing.join("\n"))
-                } else {
-                    format!("{text}\n[commit]\n{}\n", missing.join("\n"))
-                };
+                let updated = add_to_commit_section(&text, &missing);
                 fs::write(&manifest, updated)?;
                 notes.push(format!("added {} to .jagent/agents/.manifest [commit]", missing.join(", ")));
             }
@@ -258,6 +295,19 @@ pub fn init_runners(root: &Path) -> Result<(Vec<PathBuf>, Vec<String>)> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn manifest_entries_go_under_the_header_not_into_a_comment() {
+        let text = "# A file is committed only if listed under [commit]. Keep it tidy.\n\n[commit]\n\"README.md\"\n\n[local]\n\"*.lock\"\n";
+        let out =
+            super::add_to_commit_section(text, &["\"mayfly/*.json\"", "\"mayfly/README.md\""]);
+        assert_eq!(
+            out,
+            "# A file is committed only if listed under [commit]. Keep it tidy.\n\n[commit]\n\"README.md\"\n\"mayfly/*.json\"\n\"mayfly/README.md\"\n\n[local]\n\"*.lock\"\n"
+        );
+        let none = super::add_to_commit_section("# only a comment [commit]\n", &["\"a\""]);
+        assert!(none.ends_with("[commit]\n\"a\"\n"), "{none:?}");
+    }
+
     use super::*;
     use serde_json::json;
 

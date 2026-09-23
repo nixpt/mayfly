@@ -33,6 +33,8 @@ fn repo(root: &Path, jagent: bool) -> PathBuf {
     git(&r, &["init", "-q"]);
     if jagent {
         std::fs::create_dir_all(r.join(".jagent")).unwrap();
+        // committed, like a real adopted repo — so linked worktrees carry .jagent/ too
+        std::fs::write(r.join(".jagent/README.md"), "adopted\n").unwrap();
         std::fs::write(r.join(".gitignore"), ".jagent/local/\n").unwrap();
     }
     std::fs::write(r.join("README"), "x\n").unwrap();
@@ -295,4 +297,54 @@ fn runner_commands_refuse_outside_an_adopted_repo() {
     let out = mayfly(&r, &home, &["init-runners"], &[]);
     assert_eq!(out.status.code(), Some(2));
     assert!(!r.join(".jagent").exists());
+}
+
+#[test]
+fn a_worktree_reads_and_writes_its_own_runner_definitions() {
+    // MAYFLY-10: definitions are committed, hence per-branch — a linked worktree
+    // must use its own .jagent/agents/mayfly, never the main checkout's.
+    let t = tmp("wt-defs");
+    let home = t.join("home");
+    let r = repo(&t, true);
+    let wt = t.join("wt");
+    git(
+        &r,
+        &[
+            "worktree",
+            "add",
+            "-q",
+            wt.to_str().unwrap(),
+            "-b",
+            "feature",
+        ],
+    );
+
+    let out = mayfly(&wt, &home, &["init-runners"], &[]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(
+        wt.join(".jagent/agents/mayfly/read.json").exists(),
+        "init-runners must write into the worktree"
+    );
+    assert!(
+        !r.join(".jagent/agents/mayfly").exists(),
+        "init-runners must not touch the main checkout"
+    );
+
+    // a branch-local edit to the runner is what that worktree sees
+    std::fs::write(
+        wt.join(".jagent/agents/mayfly/read.json"),
+        r#"{"harness": "claude", "model": "sonnet", "read_only": true, "ttl": "5m"}"#,
+    )
+    .unwrap();
+    let listed = String::from_utf8_lossy(&mayfly(&wt, &home, &["runners"], &[]).stdout).to_string();
+    assert!(listed.contains("sonnet"), "worktree runners: {listed}");
+    let main_listed = mayfly(&r, &home, &["runners"], &[]);
+    assert!(
+        !String::from_utf8_lossy(&main_listed.stdout).contains("sonnet"),
+        "main checkout must not see the branch's runner"
+    );
 }
