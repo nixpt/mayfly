@@ -65,6 +65,32 @@ stdout (`stdout_tail` in the report).
 `done_when` is recorded as a failed claim, not a success. For `exec`, the exit code must equal `expect_exit`.
 A failed hatch never exits 0, even when the harness did.
 
+## Per-project runners and state (MAYFLY-9)
+
+In a repo that has adopted `.jagent/` (the fleet's v2 layout), mayfly keeps both halves with the project:
+
+| What | Where | Committed? |
+|---|---|---|
+| **Runners**: named partial tasks of defaults (harness, model, read_only, ttl, budget, constraints, aging) | `<repo>/.jagent/agents/mayfly/<name>.json` | yes (list `mayfly/*.json` under `[commit]` in `.jagent/agents/.manifest`) |
+| **Hatch records** (`list`/`status`/`expire`) | `<repo>/.jagent/local/mayfly/` | no (gitignored `.jagent/local/`) |
+
+```bash
+mayfly init-runners                        # scaffold read.json (claude, haiku, read_only, 10m, $0.25) + README; never overwrites
+mayfly runners                             # name  harness  model  read_only  ttl
+mayfly hatch task.json --runner read       # runner defaults merged under the task
+mayfly validate task.json --runner read
+```
+
+**Merge rule:** the task's fields win, and nested objects (`budget`, `constraints`, `aging`) merge key by key.
+Arrays and scalars are replaced. `task` and `done_when` must come from the task; a runner that sets them is
+rejected. An unknown `--runner` exits 2 and lists the known ones.
+
+**State dir precedence:** `--state-dir` > `MAYFLY_STATE_DIR` > `<main checkout>/.jagent/local/mayfly` (when the
+task's cwd, or the caller's for `list`/`status`, is inside a repo whose main checkout has `.jagent/`; linked
+worktrees resolve to their main checkout) > `~/.local/state/mayfly`. mayfly warns if `.jagent/local/` isn't
+gitignored. It never creates `.jagent/` in a repo that hasn't adopted it: runner commands exit 2 there, and
+state falls back to home. `.jagent/state/` is reserved for squadron and never used.
+
 ## Usage
 
 ```bash
