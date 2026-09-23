@@ -15,7 +15,7 @@ mayfly hatch examples/fix-test.json --worktree /path/to/repo
 
 Not a teammate. Not a persona. A disposable specialist with a hard lifespan.
 
-**Current release:** [v0.1.2](https://github.com/nixpt/mayfly/releases/tag/v0.1.2) · repo [nixpt/mayfly](https://github.com/nixpt/mayfly)
+**Current release:** [v0.1.6](https://github.com/nixpt/mayfly/releases/tag/v0.1.6) · repo [nixpt/mayfly](https://github.com/nixpt/mayfly)
 
 ## Why
 
@@ -36,13 +36,34 @@ For "fix this one thing and vanish", use mayfly.
 ## Install
 
 ```bash
-cargo install --git https://github.com/nixpt/mayfly --tag v0.1.2
+cargo install --git https://github.com/nixpt/mayfly --tag v0.1.6
 # or from a checkout:
 cargo install --path .
 # binary: mayfly
 ```
 
+Not yet installed on `nixps` (s463): nothing puts `mayfly` on `PATH` there.
+
 Needs host harness binaries on `PATH` for the runners you use (`cursor-agent`, `claude`, `codex`, …). Optional: [buckets](https://github.com/nixpt/buckets) for `--worktree`.
+
+## Model, read-only, budgets, success (MAYFLY-8)
+
+| Field | claude / ccf | codex / cxf | opencode | cursor / cece / exec |
+|---|---|---|---|---|
+| `model` | `--model` | `-m` | `-m` (beats `MAYFLY_OPENCODE_MODEL`) | **refused** |
+| `read_only: true` | `--tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config`, no skip-permissions | `--sandbox read-only` | **refused** | **refused** |
+| `budget.max_usd` | `--max-budget-usd` | **refused** | **refused** | **refused** |
+| `budget.max_turns` | not enforced (no CLI turn cap); `validate` prints a note | same | same | same |
+
+"Refused" means `validate`/`hatch` exit 2 before anything is created. A knob that would be silently ignored
+is worse than a refusal: the caller would believe a cheap, read-only, capped run happened.
+
+A read-only hatch can't write files, so its `done_when` must not require writes. Its answer is the harness's
+stdout (`stdout_tail` in the report).
+
+**Success** requires `done_when` to pass (and the harness to exit 0). `MAYFLY_DONE` printed without a passing
+`done_when` is recorded as a failed claim, not a success. For `exec`, the exit code must equal `expect_exit`.
+A failed hatch never exits 0, even when the harness did.
 
 ## Usage
 

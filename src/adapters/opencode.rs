@@ -23,11 +23,15 @@ impl Adapter for Opencode {
             "--dir".into(),
             task.cwd.clone(),
         ];
-        if let Ok(model) = std::env::var("MAYFLY_OPENCODE_MODEL") {
-            if !model.is_empty() {
-                args.push("-m".into());
-                args.push(model);
-            }
+        // The task's own `model` wins; MAYFLY_OPENCODE_MODEL stays the fallback.
+        let model = task
+            .model
+            .clone()
+            .or_else(|| std::env::var("MAYFLY_OPENCODE_MODEL").ok())
+            .filter(|m| !m.is_empty());
+        if let Some(model) = model {
+            args.push("-m".into());
+            args.push(model);
         }
         args.push(prompt);
         Ok(SpawnPlan {

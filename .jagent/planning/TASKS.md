@@ -6,6 +6,7 @@ See `.jagent/planning/tickets/` for full details on each `MAYFLY-N` ID.
 
 ## M5 — Local reliability
 
+- [x] **MAYFLY-8** (M): runner gaps for fleet dispatch: `model`, enforced `read_only`, `max_usd` → `--max-budget-usd`, success requires `done_when`, failed hatch never exits 0, docs v0.1.6.
 - [ ] **MAYFLY-6** (M): Concurrent output capture, process-group expiry, and error-safe worktree cleanup. Implementation in progress on `agent/buffy/MAYFLY-6`.
 
 ---

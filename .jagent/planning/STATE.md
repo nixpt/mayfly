@@ -11,7 +11,7 @@
 | CLI + fuzz + TTL | **shipped** | v0.1.0+ |
 | buckets `--worktree` | **shipped** | MAYFLY-1 |
 | Live adapters | **shipped** | MAYFLY-3 |
-| Public remote + tags | **shipped** | MAYFLY-4; current main is v0.1.4 |
+| Public remote + tags | **shipped** | MAYFLY-4; current main is v0.1.6 |
 | Aging inject | **parked** | MAYFLY-2 — optional, no owner |
 | Local lifecycle reliability | **in progress** | MAYFLY-6; output draining, process groups, cleanup guard |
 | Contract parity | **next** | MAYFLY-7 |
@@ -29,5 +29,5 @@ The real-worktree integration fixture still needs a provider test before MAYFLY-
 ## Metrics
 
 - Unit tests: 7 passing on the MAYFLY-6 branch
-- Latest main release: v0.1.4
+- Latest main release: v0.1.6
 - Smoke baseline: cursor, ccf, cxf, opencode (`MAYFLY_OPENCODE_MODEL`), exec

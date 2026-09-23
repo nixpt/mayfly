@@ -334,6 +334,8 @@ fn teardown_worktree(
 }
 
 fn prepare(store: &HatchStore, task: &MayflyTask, reuse_id: Option<&str>) -> Result<Planned> {
+    // Refuse before anything touches the store: no hatch dir for a task we won't run.
+    adapters::check_supported(task)?;
     let id = reuse_id
         .map(|s| s.to_string())
         .unwrap_or_else(|| format!("mf-{}", &Uuid::new_v4().to_string()[..8]));
@@ -411,26 +413,22 @@ fn watch(
                 terminate_child(child);
                 let (stdout_tail, stderr_tail) = output.finish();
                 let code = status.code();
-                let is_exec = matches!(task.harness, crate::task::Harness::Exec);
-                let done_ok = if is_exec {
-                    status.success()
-                } else {
-                    check_done_when(task, Duration::from_secs(5))?
-                };
+                let (success, reason) =
+                    judge_exit(task, code, || check_done_when(task, Duration::from_secs(5)))?;
                 let saw_marker =
                     stdout_tail.contains("MAYFLY_DONE") || stderr_tail.contains("MAYFLY_DONE");
-                let success = status.success() && (done_ok || saw_marker || is_exec);
+                let reason = if !success && saw_marker {
+                    format!("{reason}; printed MAYFLY_DONE but done_when did not pass")
+                } else {
+                    reason
+                };
 
                 rec.state = if success {
                     HatchState::Done
                 } else {
                     HatchState::Failed
                 };
-                rec.expire_reason = Some(if success {
-                    "purpose fulfilled".into()
-                } else {
-                    format!("harness exited {code:?}")
-                });
+                rec.expire_reason = Some(reason);
                 rec.pid = None;
                 rec.updated_at = Utc::now();
                 store.save(rec)?;
@@ -475,6 +473,39 @@ fn watch(
             }
         }
     }
+}
+
+/// Decide a finished hatch (MAYFLY-8). `done_when` is the only proof of success:
+/// the `MAYFLY_DONE` marker is the agent's claim, not evidence, so it never counts
+/// by itself. For `exec` the harness *is* the done_when command, so its exit code
+/// is compared to `expect_exit` (not merely to 0).
+fn judge_exit(
+    task: &MayflyTask,
+    code: Option<i32>,
+    done_when: impl FnOnce() -> Result<bool>,
+) -> Result<(bool, String)> {
+    if matches!(task.harness, crate::task::Harness::Exec) {
+        let expect = match &task.done_when {
+            DoneWhen::Command { expect_exit, .. } => *expect_exit,
+            DoneWhen::FilesExist { .. } => 0,
+        };
+        return Ok(if code == Some(expect) {
+            (true, "purpose fulfilled".into())
+        } else {
+            (
+                false,
+                format!("exec exited {code:?}, done_when expects {expect}"),
+            )
+        });
+    }
+    if code != Some(0) {
+        return Ok((false, format!("harness exited {code:?}")));
+    }
+    Ok(if done_when()? {
+        (true, "purpose fulfilled".into())
+    } else {
+        (false, "harness exited 0 but done_when did not pass".into())
+    })
 }
 
 fn check_done_when(task: &MayflyTask, timeout: Duration) -> Result<bool> {
@@ -534,7 +565,7 @@ fn term_pid(pid: u32) -> Result<()> {
                 return Err(error.into());
             }
         }
-        return Ok(());
+        Ok(())
     }
 
     #[cfg(not(unix))]
@@ -552,6 +583,52 @@ fn term_pid(pid: u32) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn t(harness: crate::task::Harness, expect_exit: i32) -> MayflyTask {
+        serde_json::from_value(serde_json::json!({
+            "task": "Check the file src/lib.rs exists",
+            "done_when": {"type": "command", "run": "true", "expect_exit": expect_exit},
+            "harness": harness,
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn marker_alone_is_not_success() {
+        // Harness exited 0 (and printed MAYFLY_DONE upstream) but done_when fails.
+        let (ok, why) =
+            judge_exit(&t(crate::task::Harness::Claude, 0), Some(0), || Ok(false)).unwrap();
+        assert!(!ok && why.contains("done_when did not pass"));
+        let (ok, _) =
+            judge_exit(&t(crate::task::Harness::Claude, 0), Some(0), || Ok(true)).unwrap();
+        assert!(ok);
+        let (ok, _) =
+            judge_exit(&t(crate::task::Harness::Claude, 0), Some(1), || Ok(true)).unwrap();
+        assert!(
+            !ok,
+            "a failing harness exit is not success even if done_when passes"
+        );
+    }
+
+    #[test]
+    fn exec_compares_exit_to_expect_exit() {
+        let never = || -> Result<bool> { panic!("exec must not re-run done_when") };
+        assert!(
+            judge_exit(&t(crate::task::Harness::Exec, 3), Some(3), never)
+                .unwrap()
+                .0
+        );
+        assert!(
+            !judge_exit(&t(crate::task::Harness::Exec, 3), Some(0), || Ok(true))
+                .unwrap()
+                .0
+        );
+        assert!(
+            judge_exit(&t(crate::task::Harness::Exec, 0), Some(0), || Ok(true))
+                .unwrap()
+                .0
+        );
+    }
     use std::process::{Command, Stdio};
 
     #[test]

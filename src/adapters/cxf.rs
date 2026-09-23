@@ -20,15 +20,12 @@ impl Adapter for Cxf {
         Ok(SpawnPlan {
             harness: self.name().into(),
             program: "codex".into(),
-            args: vec![
-                "--profile".into(),
-                profile,
-                "exec".into(),
-                "--sandbox".into(),
-                "workspace-write".into(),
-                "--skip-git-repo-check".into(),
-                prompt,
-            ],
+            args: {
+                let mut a = vec!["--profile".into(), profile];
+                a.extend(super::codex_exec_args(task));
+                a.push(prompt);
+                a
+            },
             cwd: Path::new(&task.cwd).to_path_buf(),
             prompt_path: prompt_path.to_path_buf(),
         })

@@ -17,12 +17,7 @@ impl Adapter for Cursor {
         Ok(SpawnPlan {
             harness: self.name().into(),
             program: "cursor-agent".into(),
-            args: vec![
-                "-p".into(),
-                "--yolo".into(),
-                "--trust".into(),
-                prompt,
-            ],
+            args: vec!["-p".into(), "--yolo".into(), "--trust".into(), prompt],
             cwd: Path::new(&task.cwd).to_path_buf(),
             prompt_path: prompt_path.to_path_buf(),
         })

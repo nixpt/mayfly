@@ -4,7 +4,11 @@
   "title": "MayflyTask",
   "type": "object",
   "additionalProperties": false,
-  "required": ["task", "done_when", "harness"],
+  "required": [
+    "task",
+    "done_when",
+    "harness"
+  ],
   "properties": {
     "task": {
       "type": "string",
@@ -16,23 +20,41 @@
       "oneOf": [
         {
           "type": "object",
-          "required": ["type", "run"],
+          "required": [
+            "type",
+            "run"
+          ],
           "additionalProperties": false,
           "properties": {
-            "type": { "const": "command" },
-            "run": { "type": "string", "minLength": 1 },
-            "expect_exit": { "type": "integer", "default": 0 }
+            "type": {
+              "const": "command"
+            },
+            "run": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expect_exit": {
+              "type": "integer",
+              "default": 0
+            }
           }
         },
         {
           "type": "object",
-          "required": ["type", "paths"],
+          "required": [
+            "type",
+            "paths"
+          ],
           "additionalProperties": false,
           "properties": {
-            "type": { "const": "files_exist" },
+            "type": {
+              "const": "files_exist"
+            },
             "paths": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "minItems": 1
             }
           }
@@ -41,9 +63,21 @@
     },
     "harness": {
       "type": "string",
-      "enum": ["claude", "ccf", "cursor", "codex", "cxf", "cece", "opencode", "exec"]
+      "enum": [
+        "claude",
+        "ccf",
+        "cursor",
+        "codex",
+        "cxf",
+        "cece",
+        "opencode",
+        "exec"
+      ]
     },
-    "cwd": { "type": "string", "default": "." },
+    "cwd": {
+      "type": "string",
+      "default": "."
+    },
     "ttl": {
       "type": "string",
       "pattern": "^[0-9]+(s|m|h)$",
@@ -54,38 +88,84 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "max_turns": { "type": "integer", "minimum": 1 },
-        "max_usd": { "type": "number", "minimum": 0 }
+        "max_turns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_usd": {
+          "type": "number",
+          "minimum": 0
+        }
       }
     },
     "aging": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "warn_at": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.5 },
-        "narrow_at": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.75 }
+        "warn_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.5
+        },
+        "narrow_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.75
+        }
       }
     },
     "artifacts": {
       "type": "array",
-      "items": { "type": "string", "enum": ["diff", "log", "stdout"] },
-      "default": ["diff", "log"]
+      "items": {
+        "type": "string",
+        "enum": [
+          "diff",
+          "log",
+          "stdout"
+        ]
+      },
+      "default": [
+        "diff",
+        "log"
+      ]
     },
     "constraints": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "no_spawn": { "type": "boolean", "default": true },
+        "no_spawn": {
+          "type": "boolean",
+          "default": true
+        },
         "no_commit_to": {
           "type": "array",
-          "items": { "type": "string" },
-          "default": ["main", "master", "dev"]
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "main",
+            "master",
+            "dev"
+          ]
         },
         "paths_allow": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
+    },
+    "model": {
+      "type": "string",
+      "description": "Model for the harness: claude/ccf --model, codex/cxf -m, opencode -m. Other harnesses refuse the task."
+    },
+    "read_only": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enforced read-only hatch: claude/ccf run with --tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config (no skip-permissions); codex/cxf with --sandbox read-only. Other harnesses refuse the task. The agent cannot write files, so done_when must not require writes."
     }
   }
 }

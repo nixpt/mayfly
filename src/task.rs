@@ -17,6 +17,15 @@ pub struct MayflyTask {
     pub artifacts: Vec<String>,
     #[serde(default)]
     pub constraints: Constraints,
+    /// Model for the harness (`claude --model`, `codex -m`, `opencode -m`). A harness
+    /// that cannot take one refuses the task instead of silently ignoring it (MAYFLY-8).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// Read-only hatch: the harness may read the tree but not edit, write or run
+    /// commands. Enforced by harness flags, not prompt text; harnesses without an
+    /// enforceable read-only mode refuse the task (MAYFLY-8).
+    #[serde(default)]
+    pub read_only: bool,
 }
 
 fn default_cwd() -> String {

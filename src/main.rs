@@ -82,6 +82,13 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Validate { task } => {
             let t = load_task(&task)?;
+            if let Err(e) = adapters::check_supported(&t) {
+                eprintln!("reject: {e}");
+                std::process::exit(2);
+            }
+            for note in adapters::unenforced(&t) {
+                eprintln!("note: {note}");
+            }
             match fuzz::check(&t) {
                 Ok(()) => {
                     println!("ok: task is concrete enough for a mayfly");
@@ -130,7 +137,10 @@ fn main() -> Result<()> {
             let report = run_hatch(&store, &t, plan, &opts)?;
             println!("{}", serde_json::to_string_pretty(&report)?);
             if !report.success {
-                std::process::exit(report.exit_code.unwrap_or(1));
+                // A failed hatch never exits 0, even when the harness itself did
+                // (e.g. it exited cleanly but done_when failed): callers gate on this.
+                let code = report.exit_code.filter(|c| *c != 0).unwrap_or(1);
+                std::process::exit(code);
             }
             Ok(())
         }
@@ -169,8 +179,7 @@ fn load_task(path: &PathBuf) -> Result<MayflyTask> {
         std::io::stdin().read_to_string(&mut buf)?;
         buf
     } else {
-        std::fs::read_to_string(path)
-            .with_context(|| format!("read task {}", path.display()))?
+        std::fs::read_to_string(path).with_context(|| format!("read task {}", path.display()))?
     };
     let task: MayflyTask = serde_json::from_str(&raw).context("parse MayflyTask JSON")?;
     if task.task.trim().is_empty() {
