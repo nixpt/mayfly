@@ -11,6 +11,12 @@ rather than written at the time.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-23
+
+- fix: runner definitions per worktree; manifest edit matches the [commit] header (MAYFLY-10) (#9)
+
+
+
 ## [0.2.0] - 2026-09-23
 
 - feat: per-project runners and state in .jagent (MAYFLY-9) (#8)
