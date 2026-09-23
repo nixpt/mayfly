@@ -8,7 +8,9 @@ pub fn parse_ttl(s: &str) -> Result<Duration> {
         bail!("empty ttl");
     }
     let (num, unit) = s.split_at(s.len() - 1);
-    let n: u64 = num.parse().map_err(|_| anyhow::anyhow!("bad ttl number in {s}"))?;
+    let n: u64 = num
+        .parse()
+        .map_err(|_| anyhow::anyhow!("bad ttl number in {s}"))?;
     Ok(match unit {
         "s" => Duration::from_secs(n),
         "m" => Duration::from_secs(n * 60),

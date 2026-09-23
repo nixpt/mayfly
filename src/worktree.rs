@@ -46,9 +46,7 @@ pub fn create(spec: &WorktreeSpec, branch: &str) -> Result<ProvisionedWorktree> 
         .with_context(|| format!("worktree repo {}", spec.repo.display()))?;
 
     let mut cmd = Command::new("buckets");
-    cmd.args(["worktree", "create"])
-        .arg(&repo)
-        .arg(branch);
+    cmd.args(["worktree", "create"]).arg(&repo).arg(branch);
     if let Some(from) = &spec.from {
         cmd.args(["--from", from]);
     }
@@ -66,8 +64,7 @@ pub fn create(spec: &WorktreeSpec, branch: &str) -> Result<ProvisionedWorktree> 
     let path = stdout
         .lines()
         .map(str::trim)
-        .filter(|l| !l.is_empty())
-        .last()
+        .rfind(|l| !l.is_empty())
         .map(PathBuf::from)
         .with_context(|| {
             format!(
@@ -77,7 +74,10 @@ pub fn create(spec: &WorktreeSpec, branch: &str) -> Result<ProvisionedWorktree> 
         })?;
 
     if !path.exists() {
-        bail!("buckets reported worktree path {} but it does not exist", path.display());
+        bail!(
+            "buckets reported worktree path {} but it does not exist",
+            path.display()
+        );
     }
 
     eprintln!("mayfly: worktree {}", path.display());

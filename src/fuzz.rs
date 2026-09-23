@@ -92,6 +92,8 @@ mod tests {
             aging: None,
             artifacts: vec![],
             constraints: Default::default(),
+            model: None,
+            read_only: false,
         }
     }
 

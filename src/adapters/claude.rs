@@ -16,13 +16,7 @@ impl Adapter for Claude {
         Ok(SpawnPlan {
             harness: self.name().into(),
             program: "claude".into(),
-            args: vec![
-                "-p".into(),
-                prompt,
-                "--output-format".into(),
-                "text".into(),
-                "--dangerously-skip-permissions".into(),
-            ],
+            args: super::claude_args(task, prompt),
             cwd: Path::new(&task.cwd).to_path_buf(),
             prompt_path: prompt_path.to_path_buf(),
         })
