@@ -231,9 +231,9 @@ fn open_store(explicit: Option<PathBuf>, cwd: &std::path::Path) -> Result<HatchS
     HatchStore::open(Some(dir))
 }
 
-/// The adopted project for runner commands; exit 2 with a hint outside one.
+/// Where this worktree's runner definitions live; exit 2 with a hint outside an adopted repo.
 fn require_project(cwd: &std::path::Path) -> Result<PathBuf> {
-    match project::project_root(cwd) {
+    match project::defs_root(cwd) {
         Some(root) => Ok(root),
         None => {
             eprintln!(
