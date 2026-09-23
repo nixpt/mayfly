@@ -11,6 +11,17 @@ rather than written at the time.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-23
+
+- feat: per-project runners and state in .jagent (MAYFLY-9) (#8)
+- MAYFLY-8: runner gaps for fleet dispatch — model, read-only, budgets, success, docs (#7)
+- docs(license): add the missing LICENSE-APACHE
+- Merge pull request #4 from nixpt/agent/buffy/mayfly-assets
+- Merge main into agent/buffy/mayfly-assets
+- docs: add mayfly brand assets
+
+
+
 ### Fixed
 - Added the missing `LICENSE-APACHE`. `Cargo.toml` and the README have both
   declared `MIT OR Apache-2.0` since the first release, but only `LICENSE-MIT`
