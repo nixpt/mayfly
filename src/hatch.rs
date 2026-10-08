@@ -178,7 +178,7 @@ pub fn plan_hatch(store: &HatchStore, task: &MayflyTask, opts: &HatchOpts) -> Re
         ),
         None => (None, None),
     };
-    Ok(HatchPlanOut {
+    let out = HatchPlanOut {
         id: planned.id,
         harness: planned.spawn.harness.clone(),
         program: planned.spawn.program.clone(),
@@ -189,7 +189,10 @@ pub fn plan_hatch(store: &HatchStore, task: &MayflyTask, opts: &HatchOpts) -> Re
         done_when: task.done_when.summary(),
         worktree_repo: wt_repo,
         worktree_branch: wt_branch,
-    })
+    };
+    // Dry-run must not leave MCP env material on disk after the plan is captured.
+    adapters::cleanup_mcp_config(&planned.dir);
+    Ok(out)
 }
 
 pub fn run_hatch(
@@ -220,6 +223,8 @@ pub fn run_hatch(
         None
     };
     let mut cleanup = WorktreeCleanup::new(provisioned);
+    // Secrets in hatch-local mcp-config must not survive the hatch (MAYFLY-11).
+    let _mcp_guard = adapters::McpConfigGuard::for_hatch(&planned.dir);
 
     // Re-plan spawn against the (possibly new) cwd.
     let prompt_path = planned.dir.join("prompt.txt");
@@ -295,6 +300,7 @@ pub fn run_hatch(
 
 pub fn expire_hatch(store: &HatchStore, id: &str, reason: &str) -> Result<()> {
     let mut rec = store.get(id)?.with_context(|| format!("no hatch {id}"))?;
+    adapters::cleanup_mcp_config(&rec.dir);
     if let Some(pid) = rec.pid {
         let _ = term_pid(pid);
     }

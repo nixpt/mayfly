@@ -8,6 +8,7 @@ See `.jagent/planning/tickets/` for full details on each `MAYFLY-N` ID.
 
 - [x] **MAYFLY-9** (M): per-project runners (`.jagent/agents/mayfly/`, `--runner`, `runners`, `init-runners`) and state (`.jagent/local/mayfly/`) in the .jagent v2 layout.
 - [x] **MAYFLY-8** (M): runner gaps for fleet dispatch: `model`, enforced `read_only`, `max_usd` → `--max-budget-usd`, success requires `done_when`, failed hatch never exits 0, docs v0.1.6.
+- [x] **MAYFLY-11** (M): `tools` + `mcp_servers` allowlist for claude/ccf; fleet mayflies (mailer, inbox-digest, pr-survey).
 - [ ] **MAYFLY-6** (M): Concurrent output capture, process-group expiry, and error-safe worktree cleanup. Implementation in progress on `agent/buffy/MAYFLY-6`.
 
 ---

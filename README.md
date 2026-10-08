@@ -52,8 +52,14 @@ Needs host harness binaries on `PATH` for the runners you use (`cursor-agent`, `
 |---|---|---|---|---|
 | `model` | `--model` | `-m` | `-m` (beats `MAYFLY_OPENCODE_MODEL`) | **refused** |
 | `read_only: true` | `--tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config`, no skip-permissions | `--sandbox read-only` | **refused** | **refused** |
+| `tools` | `--tools <builtins> --allowedTools <all> --permission-mode dontAsk --strict-mcp-config`, no skip-permissions | **refused** | **refused** | **refused** |
+| `mcp_servers` | hatch-local `--mcp-config` from `~/.claude.json` + `--strict-mcp-config` (requires `tools`) | **refused** | **refused** | **refused** |
 | `budget.max_usd` | `--max-budget-usd` | **refused** | **refused** | **refused** |
 | `budget.max_turns` | not enforced (no CLI turn cap); `validate` prints a note | same | same | same |
+
+`tools` and `read_only` are mutually exclusive. `mcp_servers` without `tools` is refused. An
+`mcp__<server>__*` tool whose server is not listed in `mcp_servers` is refused. Unknown
+`mcp_servers` names (missing from the user's Claude `mcpServers`) fail validate.
 
 "Refused" means `validate`/`hatch` exit 2 before anything is created. A knob that would be silently ignored
 is worse than a refusal: the caller would believe a cheap, read-only, capped run happened.
@@ -169,6 +175,27 @@ mayfly hatch /path/to/task.json --worktree "$REPO"
 ```
 
 Prefer mechanical `done_when` + TTL ≤ 2h. Durable multi-step work stays on horses/`agent-launch`.
+
+## Fleet mayflies
+
+Ready-made tasks under [`examples/fleet/`](examples/fleet/) for repetitive fleet chores (Haiku,
+curated tools — no `--dangerously-skip-permissions`). Validate-only in this repo; foreman runs the
+first live hatch.
+
+| File | Role | Mode |
+|---|---|---|
+| `mailer.json` | Unread INBOX → digest file + optional drafts via mailgate | `tools` + `mcp_servers: ["mailgate"]` (read/list/search/draft + `Write` digest; no `mail_send`, no Bash) |
+| `inbox-digest.json` | Print digest of DMs under `/workspace/.squad/state/comms/dm/<agent>/inbox` | `read_only: true` — `done_when` is `command`/`true` because read_only cannot write a digest file; success is harness exit 0 |
+| `pr-survey.json` | Open PRs + CI across named `nixpt/*` repos → report file | `tools`: `Bash(gh pr …)` + `Write` report |
+
+Outputs use absolute paths under `/build/tmp/mayfly/`. Example live-hatch commands (foreman):
+
+```bash
+mkdir -p /build/tmp/mayfly
+mayfly hatch examples/fleet/mailer.json
+mayfly hatch examples/fleet/inbox-digest.json
+mayfly hatch examples/fleet/pr-survey.json
+```
 
 ## Relationship to the fleet
 

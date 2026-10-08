@@ -26,6 +26,15 @@ pub struct MayflyTask {
     /// enforceable read-only mode refuse the task (MAYFLY-8).
     #[serde(default)]
     pub read_only: bool,
+    /// Exact Claude Code tool / permission-rule names for an allowlisted hatch
+    /// (MAYFLY-11). When non-empty, claude/ccf never get `--dangerously-skip-permissions`.
+    /// Incompatible with `read_only`. Other harnesses refuse.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tools: Vec<String>,
+    /// MCP server names to load from the user's Claude config (`~/.claude.json`
+    /// `mcpServers`) into a hatch-local `--mcp-config` (MAYFLY-11). Requires `tools`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub mcp_servers: Vec<String>,
 }
 
 fn default_cwd() -> String {

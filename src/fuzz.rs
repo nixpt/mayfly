@@ -94,6 +94,8 @@ mod tests {
             constraints: Default::default(),
             model: None,
             read_only: false,
+            tools: vec![],
+            mcp_servers: vec![],
         }
     }
 
