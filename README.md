@@ -179,23 +179,28 @@ Prefer mechanical `done_when` + TTL ≤ 2h. Durable multi-step work stays on hor
 ## Fleet mayflies
 
 Ready-made tasks under [`examples/fleet/`](examples/fleet/) for repetitive fleet chores (Haiku,
-curated tools — no `--dangerously-skip-permissions`). Validate-only in this repo; foreman runs the
-first live hatch.
+curated tools — no `--dangerously-skip-permissions`). All three verified live (2026-10-08).
 
 | File | Role | Mode |
 |---|---|---|
-| `mailer.json` | Unread INBOX → digest file + optional drafts via mailgate | `tools` + `mcp_servers: ["mailgate"]` (read/list/search/draft + `Write` digest; no `mail_send`, no Bash) |
-| `inbox-digest.json` | Print digest of DMs under `/workspace/.squad/state/comms/dm/<agent>/inbox` | `read_only: true` — `done_when` is `command`/`true` because read_only cannot write a digest file; success is harness exit 0 |
-| `pr-survey.json` | Open PRs + CI across named `nixpt/*` repos → report file | `tools`: `Bash(gh pr …)` + `Write` report |
+| `mailer.json` | Unread INBOX → digest file (+ drafts only when the task names recipients) | `tools` + `mcp_servers: ["mailgate"]`: accounts/list/read/search/draft + `Edit(//…digest)`; no `mail_send`, no Bash |
+| `inbox-digest.json` | Unread bridge DMs → digest file, grouped by sender, duplicates collapsed | `tools`: `Bash(…/squad-msg --list:*)` + `Edit(//…digest)`; run with `AGENT_NAME=<agent>` |
+| `pr-survey.json` | Open PRs + CI across named `nixpt/*` repos → report file | `tools`: `Bash(gh pr list/view/checks:*)` + `Edit(//…report)` |
 
-Outputs use absolute paths under `/build/tmp/mayfly/`. Example live-hatch commands (foreman):
+Writing a fleet task:
+- File rules are `Edit(//abs/path)`: `Write(...)` rules never match, and `/x` in a rule is project-root-relative.
+- A `Bash(prefix:*)` rule matches one simple command. Tell the agent to run each command alone (no loops, pipes,
+  `&&`, `;`, redirects); a compound command is denied unless every part matches.
+- `done_when` must still fail before the agent starts. `hatch` refuses one that already passes (a stale output file,
+  `command: true`): it would end the hatch at the first poll, before the agent did anything.
 
 ```bash
 mkdir -p /build/tmp/mayfly
-mayfly hatch examples/fleet/mailer.json
-mayfly hatch examples/fleet/inbox-digest.json
-mayfly hatch examples/fleet/pr-survey.json
+mayfly hatch examples/fleet/mailer.json                         # → /build/tmp/mayfly/mailer-digest.md
+AGENT_NAME=foreman mayfly hatch examples/fleet/inbox-digest.json # → /build/tmp/mayfly/inbox-digest.md
+mayfly hatch examples/fleet/pr-survey.json                       # → /build/tmp/mayfly/pr-survey.md
 ```
+Delete the previous output first; a leftover file makes `done_when` pass before the agent starts.
 
 ## Relationship to the fleet
 

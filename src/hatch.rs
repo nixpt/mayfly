@@ -231,6 +231,7 @@ pub fn run_hatch(
     std::fs::write(&prompt_path, &planned.prompt)?;
     let adapter = adapters::for_harness(task.harness);
     let spawn = adapter.plan(&task, &prompt_path)?;
+    refuse_if_already_done(&task)?;
 
     let now = Utc::now();
     let mut rec = HatchRecord {
@@ -514,6 +515,24 @@ fn judge_exit(
     })
 }
 
+/// A `done_when` that already passes before the agent starts proves nothing: the
+/// first poll would end the hatch before the agent did any work (MAYFLY-13 — an
+/// inbox digest with `done_when: true` "succeeded" in 3 ms). `exec` is exempt:
+/// there the done_when command is the work itself.
+fn refuse_if_already_done(task: &MayflyTask) -> Result<()> {
+    if matches!(task.harness, crate::task::Harness::Exec) {
+        return Ok(());
+    }
+    if check_done_when(task, Duration::from_secs(5))? {
+        anyhow::bail!(
+            "done_when ({}) already passes before the agent starts, so it cannot prove the \
+             task was done; remove stale outputs or use a check the agent's work must satisfy",
+            task.done_when.summary()
+        );
+    }
+    Ok(())
+}
+
 fn check_done_when(task: &MayflyTask, timeout: Duration) -> Result<bool> {
     match &task.done_when {
         DoneWhen::Command { run, expect_exit } => {
@@ -597,6 +616,19 @@ mod tests {
             "harness": harness,
         }))
         .unwrap()
+    }
+
+    #[test]
+    fn refuses_done_when_that_passes_before_spawn() {
+        // `run: true` with expect 0 already passes: no agent work could be proven.
+        let err = refuse_if_already_done(&t(crate::task::Harness::Claude, 0)).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("already passes before the agent starts"));
+        // A check the agent still has to satisfy is fine.
+        assert!(refuse_if_already_done(&t(crate::task::Harness::Claude, 1)).is_ok());
+        // exec is exempt: its done_when command is the work.
+        assert!(refuse_if_already_done(&t(crate::task::Harness::Exec, 0)).is_ok());
     }
 
     #[test]
