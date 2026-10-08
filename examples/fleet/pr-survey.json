@@ -13,7 +13,7 @@
     "Bash(gh pr list:*)",
     "Bash(gh pr view:*)",
     "Bash(gh pr checks:*)",
-    "Write(/build/tmp/mayfly/pr-survey.md)"
+    "Edit(//build/tmp/mayfly/pr-survey.md)"
   ],
   "constraints": {
     "no_spawn": true,
