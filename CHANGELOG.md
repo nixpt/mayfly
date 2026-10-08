@@ -11,6 +11,13 @@ rather than written at the time.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-08
+
+- Merge pull request #13 from nixpt/agent/foreman/MAYFLY-13
+- fix(MAYFLY-13): refuse a done_when that already passes; working fleet tasks
+
+
+
 ## [0.2.2] - 2026-10-08
 
 - Merge pull request #12 from nixpt/agent/foreman/MAYFLY-12
