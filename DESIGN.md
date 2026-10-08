@@ -86,7 +86,7 @@ validate → provision isolated cwd → write prompt → launch adapter
     "paths_allow": ["src/foo/"]
   },
   "model": "haiku",
-  "tools": ["mcp__mailgate__mail_read", "Write(/build/tmp/mayfly/out.md)"],
+  "tools": ["mcp__mailgate__mail_read", "Edit(//build/tmp/mayfly/out.md)"],
   "mcp_servers": ["mailgate"]
 }
 ```
@@ -98,6 +98,12 @@ skip-permissions. `tools` is exact Claude Code tool names / permission rules; bu
 0600 `--mcp-config` (never logged; deleted on dry-run return, hatch end, and expire). Validate
 rejects `tools`+`read_only`, `mcp_servers` without `tools`, `mcp__X__*` tools whose server is not
 listed, unknown server names, and either field on a harness that cannot honour them.
+
+File rules (MAYFLY-12): scope writes with `Edit(...)`, never `Write(...)`. Claude Code matches
+file-path rules only as `Edit(...)`, which covers every file-editing tool; a path-scoped `Edit`
+also puts `Write` in `--tools` so the agent can create the file. In a rule, `/x` is relative to
+the project root and `//x` is absolute, so an absolute output path is `Edit(//build/tmp/...)`.
+Validate rejects path-scoped `Write(...)` and single-slash `Edit(/...)` / `Read(/...)`.
 
 ### `done_when` kinds
 

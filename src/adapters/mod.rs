@@ -115,6 +115,26 @@ fn check_tools_mcp(task: &MayflyTask) -> Result<()> {
         bail!("mcp_servers requires tools (name every allowed MCP tool explicitly)");
     }
     for tool in &task.tools {
+        if tool_base_name(tool) == "Write" && tool.contains('(') {
+            bail!(
+                "tool '{tool}': Claude Code never matches a path-scoped Write(...) rule; \
+                 use Edit(...) (Edit rules cover every file-editing tool, including Write)"
+            );
+        }
+        if matches!(tool_base_name(tool), "Edit" | "Read") {
+            let path = tool
+                .split_once('(')
+                .map(|(_, rest)| rest.trim_end_matches(')'))
+                .unwrap_or("");
+            if path.starts_with('/') && !path.starts_with("//") {
+                bail!(
+                    "tool '{tool}': in a Claude Code permission rule '/{}' is relative to the \
+                     project root, not absolute; write '//{}' for an absolute path",
+                    path.trim_start_matches('/'),
+                    path.trim_start_matches('/')
+                );
+            }
+        }
         if let Some(server) = mcp_server_from_tool(tool) {
             if !task.mcp_servers.iter().any(|s| s == server) {
                 bail!("tool '{tool}' needs mcp_servers to include '{server}'");
@@ -187,15 +207,24 @@ pub(crate) fn claude_args(
 }
 
 /// Built-in tool names for `--tools` (MCP names are not built-ins).
+///
+/// A path-scoped `Edit(...)` rule also exposes `Write`, so the agent can create the
+/// file; the `Edit(...)` permission rule still limits which paths either tool may touch.
 fn builtin_tools_csv(tools: &[String]) -> String {
-    let mut out = Vec::new();
+    let mut out: Vec<String> = Vec::new();
+    let mut push = |name: &str| {
+        if !out.iter().any(|s| s == name) {
+            out.push(name.to_string());
+        }
+    };
     for spec in tools {
         let base = tool_base_name(spec);
         if base.starts_with("mcp__") {
             continue;
         }
-        if !out.iter().any(|s: &String| s == base) {
-            out.push(base.to_string());
+        push(base);
+        if base == "Edit" && spec.contains('(') {
+            push("Write");
         }
     }
     out.join(",")
@@ -365,15 +394,15 @@ mod tests {
         let mut t = task(Harness::Claude);
         t.tools = vec![
             "Bash(gh pr list:*)".into(),
-            "Write(/build/tmp/mayfly/pr-survey.md)".into(),
+            "Edit(//build/tmp/mayfly/pr-survey.md)".into(),
         ];
         let dir = scratch_dir();
         let a = claude_args(&t, "p".into(), &dir).unwrap();
         assert!(!has(&a, "--dangerously-skip-permissions"));
-        assert_eq!(after(&a, "--tools"), "Bash,Write");
+        assert_eq!(after(&a, "--tools"), "Bash,Edit,Write");
         assert_eq!(
             after(&a, "--allowedTools"),
-            "Bash(gh pr list:*),Write(/build/tmp/mayfly/pr-survey.md)"
+            "Bash(gh pr list:*),Edit(//build/tmp/mayfly/pr-survey.md)"
         );
         assert_eq!(after(&a, "--permission-mode"), "dontAsk");
         assert!(has(&a, "--strict-mcp-config"));
@@ -389,13 +418,13 @@ mod tests {
                 let mut t = task(Harness::Ccf);
                 t.tools = vec![
                     "mcp__mailgate__mail_read".into(),
-                    "Write(/build/tmp/mayfly/mailer-digest.md)".into(),
+                    "Edit(//build/tmp/mayfly/mailer-digest.md)".into(),
                 ];
                 t.mcp_servers = vec!["mailgate".into()];
                 let dir = scratch_dir();
                 let a = claude_args(&t, "p".into(), &dir).unwrap();
                 assert!(!has(&a, "--dangerously-skip-permissions"));
-                assert_eq!(after(&a, "--tools"), "Write");
+                assert_eq!(after(&a, "--tools"), "Edit,Write");
                 assert!(has(&a, "--strict-mcp-config"));
                 let cfg = PathBuf::from(after(&a, "--mcp-config"));
                 assert_eq!(cfg, dir.join("mcp-config.json"));
@@ -454,6 +483,20 @@ mod tests {
                     .unwrap_err()
                     .to_string()
                     .contains("needs mcp_servers to include 'mailgate'"));
+
+                let mut t = task(Harness::Claude);
+                t.tools = vec!["Write(/build/tmp/mayfly/x.md)".into()];
+                assert!(check_supported(&t)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("use Edit(...)"));
+
+                let mut t = task(Harness::Claude);
+                t.tools = vec!["Edit(/build/tmp/mayfly/x.md)".into()];
+                assert!(check_supported(&t)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("'//build/tmp/mayfly/x.md'"));
 
                 let mut t = task(Harness::Cursor);
                 t.tools = vec!["Read".into()];
