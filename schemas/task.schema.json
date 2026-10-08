@@ -165,7 +165,23 @@
     "read_only": {
       "type": "boolean",
       "default": false,
-      "description": "Enforced read-only hatch: claude/ccf run with --tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config (no skip-permissions); codex/cxf with --sandbox read-only. Other harnesses refuse the task. The agent cannot write files, so done_when must not require writes."
+      "description": "Enforced read-only hatch: claude/ccf run with --tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config (no skip-permissions); codex/cxf with --sandbox read-only. Other harnesses refuse the task. The agent cannot write files, so done_when must not require writes. Incompatible with tools."
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Claude Code tool / permission-rule allowlist (MAYFLY-11). When set, claude/ccf use --tools <builtins> --allowedTools <all> --permission-mode dontAsk --strict-mcp-config and never --dangerously-skip-permissions. Incompatible with read_only. Other harnesses refuse."
+    },
+    "mcp_servers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "MCP server names from the user's ~/.claude.json mcpServers (MAYFLY-11). Requires tools. Resolved into a hatch-local 0600 --mcp-config (deleted at teardown). Unknown names fail validate. Other harnesses refuse."
     }
   }
 }

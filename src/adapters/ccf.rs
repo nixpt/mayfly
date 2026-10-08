@@ -18,10 +18,11 @@ impl Adapter for Ccf {
 
     fn plan(&self, task: &MayflyTask, prompt_path: &Path) -> Result<SpawnPlan> {
         let prompt = super::read_prompt(prompt_path)?;
+        let hatch_dir = prompt_path.parent().unwrap_or_else(|| Path::new("."));
         Ok(SpawnPlan {
             harness: self.name().into(),
             program: "claude".into(),
-            args: super::claude_args(task, prompt),
+            args: super::claude_args(task, prompt, hatch_dir)?,
             cwd: Path::new(&task.cwd).to_path_buf(),
             prompt_path: prompt_path.to_path_buf(),
         })

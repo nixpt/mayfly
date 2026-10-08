@@ -79,3 +79,9 @@ TTL aging ladder states already flip; per-harness inject is best-effort polish a
 Rejected alternatives:
 - **block release on aging inject**: delays useful hatch loop
 
+
+## 2026-10-08T18:04:24-05:00 — [TACTICAL] [ADOPTED] inbox-digest done_when is command/true
+
+Reason:
+read_only forbids Write so files_exist cannot cease a print-only digest; mayfly success is harness exit 0 plus mechanical done_when, and true is that stand-in
+

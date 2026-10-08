@@ -84,9 +84,20 @@ validate → provision isolated cwd → write prompt → launch adapter
     "no_spawn": true,
     "no_commit_to": ["main", "master", "dev"],
     "paths_allow": ["src/foo/"]
-  }
+  },
+  "model": "haiku",
+  "tools": ["mcp__mailgate__mail_read", "Write(/build/tmp/mayfly/out.md)"],
+  "mcp_servers": ["mailgate"]
 }
 ```
+
+Optional `tools` / `mcp_servers` (MAYFLY-11, claude/ccf only): curated allowlist instead of
+skip-permissions. `tools` is exact Claude Code tool names / permission rules; builtins go to
+`--tools`, the full list to `--allowedTools`, with `--permission-mode dontAsk --strict-mcp-config`.
+`mcp_servers` names are resolved from the user's `~/.claude.json` `mcpServers` into a hatch-local
+0600 `--mcp-config` (never logged; deleted on dry-run return, hatch end, and expire). Validate
+rejects `tools`+`read_only`, `mcp_servers` without `tools`, `mcp__X__*` tools whose server is not
+listed, unknown server names, and either field on a harness that cannot honour them.
 
 ### `done_when` kinds
 
@@ -133,7 +144,7 @@ expire(child) -> ExitReport
 
 | harness | spawn sketch |
 |---------|----------------|
-| `claude` | `claude -p … --output-format text --dangerously-skip-permissions` |
+| `claude` | `claude -p … --output-format text` + default `--dangerously-skip-permissions`, or `read_only` / `tools` allowlist (MAYFLY-8/11) |
 | `ccf` | same argv as `claude`; expects fleet `ccf`/flownet Anthropic env |
 | `cursor` | `cursor-agent -p --yolo --trust …` |
 | `codex` | `codex exec --sandbox workspace-write --skip-git-repo-check …` |

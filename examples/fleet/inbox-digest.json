@@ -1,0 +1,18 @@
+{
+  "task": "Read unread DMs under /workspace/.squad/state/comms/dm/foreman/inbox and print a short digest (from, gist, suggested action). Write nothing to disk.",
+  "done_when": {
+    "type": "command",
+    "run": "true",
+    "expect_exit": 0
+  },
+  "harness": "claude",
+  "model": "haiku",
+  "cwd": ".",
+  "ttl": "10m",
+  "budget": { "max_usd": 0.25 },
+  "read_only": true,
+  "constraints": {
+    "no_spawn": true,
+    "no_commit_to": ["main", "master", "dev"]
+  }
+}

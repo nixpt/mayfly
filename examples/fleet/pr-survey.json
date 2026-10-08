@@ -1,0 +1,22 @@
+{
+  "task": "Survey open PRs + CI via gh for nixpt/mayfly, nixpt/squadmail, nixpt/buckets; write /build/tmp/mayfly/pr-survey.md (repo, number, title, checks summary).",
+  "done_when": {
+    "type": "files_exist",
+    "paths": ["/build/tmp/mayfly/pr-survey.md"]
+  },
+  "harness": "claude",
+  "model": "haiku",
+  "cwd": ".",
+  "ttl": "10m",
+  "budget": { "max_usd": 0.5 },
+  "tools": [
+    "Bash(gh pr list:*)",
+    "Bash(gh pr view:*)",
+    "Bash(gh pr checks:*)",
+    "Write(/build/tmp/mayfly/pr-survey.md)"
+  ],
+  "constraints": {
+    "no_spawn": true,
+    "no_commit_to": ["main", "master", "dev"]
+  }
+}
