@@ -10,6 +10,8 @@ See `.jagent/planning/tickets/` for full details on each `MAYFLY-N` ID.
 - [x] **MAYFLY-8** (M): runner gaps for fleet dispatch: `model`, enforced `read_only`, `max_usd` → `--max-budget-usd`, success requires `done_when`, failed hatch never exits 0, docs v0.1.6.
 - [x] **MAYFLY-11** (M): `tools` + `mcp_servers` allowlist for claude/ccf; fleet mayflies (mailer, inbox-digest, pr-survey).
 - [ ] **MAYFLY-6** (M): Concurrent output capture, process-group expiry, and error-safe worktree cleanup. Implementation in progress on `agent/buffy/MAYFLY-6`.
+- [ ] **MAYFLY-14** (S): `bro` harness (`bro exec` as engine; needs bro-cli BRO-134).
+- [ ] **MAYFLY-15** (S): retire the `cece` harness (squadron SQ-242; after MAYFLY-14).
 
 ---
 
