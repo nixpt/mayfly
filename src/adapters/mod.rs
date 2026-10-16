@@ -4,6 +4,7 @@ mod ccf;
 mod cece;
 mod claude;
 mod codex;
+mod copilot;
 mod cursor;
 mod cxf;
 mod exec;
@@ -49,6 +50,7 @@ pub fn for_harness(h: Harness) -> Box<dyn Adapter> {
         Harness::Cxf => Box::new(cxf::Cxf),
         Harness::Cece => Box::new(cece::Cece),
         Harness::Opencode => Box::new(opencode::Opencode),
+        Harness::Copilot => Box::new(copilot::Copilot),
         Harness::Exec => Box::new(exec::Exec),
     }
 }
@@ -57,16 +59,22 @@ pub fn for_harness(h: Harness) -> Box<dyn Adapter> {
 fn takes_model(h: Harness) -> bool {
     matches!(
         h,
-        Harness::Claude | Harness::Ccf | Harness::Codex | Harness::Cxf | Harness::Opencode
+        Harness::Claude
+            | Harness::Ccf
+            | Harness::Codex
+            | Harness::Cxf
+            | Harness::Opencode
+            | Harness::Copilot
     )
 }
 
 /// Harnesses with an enforceable read-only mode: claude `--tools` + `dontAsk`,
-/// codex `--sandbox read-only`. Everything else would run writable.
+/// codex `--sandbox read-only`, copilot `--deny-tool write/shell/url`. Everything else
+/// would run writable.
 fn has_read_only(h: Harness) -> bool {
     matches!(
         h,
-        Harness::Claude | Harness::Ccf | Harness::Codex | Harness::Cxf
+        Harness::Claude | Harness::Ccf | Harness::Codex | Harness::Cxf | Harness::Copilot
     )
 }
 
@@ -77,11 +85,11 @@ pub fn check_supported(task: &MayflyTask) -> Result<()> {
     let h = task.harness;
     if task.model.is_some() && !takes_model(h) {
         bail!(
-            "harness '{h}' has no model flag; drop `model` or pick claude/ccf/codex/cxf/opencode"
+            "harness '{h}' has no model flag; drop `model` or pick claude/ccf/codex/cxf/opencode/copilot"
         );
     }
     if task.read_only && !has_read_only(h) {
-        bail!("harness '{h}' has no enforceable read-only mode; use claude/ccf/codex/cxf for read_only tasks");
+        bail!("harness '{h}' has no enforceable read-only mode; use claude/ccf/codex/cxf/copilot for read_only tasks");
     }
     if let Some(b) = &task.budget {
         if b.max_usd.is_some() && !matches!(h, Harness::Claude | Harness::Ccf) {
@@ -96,15 +104,27 @@ fn supports_tools_mcp(h: Harness) -> bool {
     matches!(h, Harness::Claude | Harness::Ccf)
 }
 
+/// copilot enforces `tools` by translating them into its own permission rules
+/// (MAYFLY-16); it has no equivalent of `mcp_servers`.
+fn supports_tools(h: Harness) -> bool {
+    supports_tools_mcp(h) || h == Harness::Copilot
+}
+
 fn check_tools_mcp(task: &MayflyTask) -> Result<()> {
     let has_tools = !task.tools.is_empty();
     let has_mcp = !task.mcp_servers.is_empty();
     if !has_tools && !has_mcp {
         return Ok(());
     }
-    if !supports_tools_mcp(task.harness) {
+    if has_mcp && !supports_tools_mcp(task.harness) {
         bail!(
-            "tools/mcp_servers are only enforceable on claude/ccf; harness '{}' would ignore them",
+            "mcp_servers are only enforceable on claude/ccf; harness '{}' would ignore them",
+            task.harness
+        );
+    }
+    if !supports_tools(task.harness) {
+        bail!(
+            "tools/mcp_servers are only enforceable on claude/ccf/copilot; harness '{}' would ignore them",
             task.harness
         );
     }
@@ -142,6 +162,9 @@ fn check_tools_mcp(task: &MayflyTask) -> Result<()> {
         }
     }
     validate_mcp_server_names(&task.mcp_servers)?;
+    if task.harness == Harness::Copilot && has_tools {
+        copilot::tool_rules(&task.tools, &task.cwd)?;
+    }
     Ok(())
 }
 
@@ -150,6 +173,12 @@ pub fn unenforced(task: &MayflyTask) -> Vec<String> {
     let mut notes = vec![];
     if task.budget.as_ref().is_some_and(|b| b.max_turns.is_some()) {
         notes.push("budget.max_turns is not enforced: no harness CLI exposes a turn cap (claude has none in --help)".into());
+    }
+    if task.harness == Harness::Copilot
+        && !task.read_only
+        && task.tools.iter().any(|t| tool_base_name(t) == "Bash")
+    {
+        notes.push("copilot also auto-approves its built-in read-only shell commands (ls, cat, pwd, git log, gh pr list, …) beyond the listed Bash rules; writes, network and other commands stay denied".into());
     }
     notes
 }
@@ -567,6 +596,94 @@ mod tests {
             max_usd: None,
         });
         assert_eq!(unenforced(&t).len(), 1);
+    }
+
+    #[test]
+    fn copilot_modes_become_permission_flags() {
+        let p = |t: &MayflyTask| copilot::copilot_args(t, "p".into()).unwrap();
+        // Unrestricted: full access, like cursor --yolo.
+        let a = p(&task(Harness::Copilot));
+        assert_eq!(a[..3], ["-p", "p", "-s"]);
+        assert!(a.contains(&"--allow-all".to_string()));
+
+        // read_only: deny write/shell/url, no built-in MCP, never --allow-all.
+        let mut t = task(Harness::Copilot);
+        t.read_only = true;
+        t.model = Some("gpt-5.4".into());
+        let a = p(&t);
+        for kind in ["write", "shell", "url"] {
+            assert!(
+                a.windows(2).any(|w| w[0] == "--deny-tool" && w[1] == kind),
+                "{kind}"
+            );
+        }
+        assert!(a.contains(&"--disable-builtin-mcps".to_string()));
+        assert!(!a.iter().any(|x| x.starts_with("--allow")));
+        assert_eq!(after(&a, "--model"), "gpt-5.4");
+        assert!(check_supported(&t).is_ok());
+    }
+
+    #[test]
+    fn copilot_tools_translate_or_refuse() {
+        let cwd = std::env::current_dir().unwrap();
+        let r = copilot::tool_rules(
+            &[
+                "Bash(gh pr view:*)".into(),
+                "Read".into(),
+                "Edit(//build/tmp/mayfly/r.md)".into(),
+                "Edit(/notes/out.md)".into(),
+            ],
+            ".",
+        )
+        .unwrap();
+        assert_eq!(
+            r.allow,
+            [
+                "shell(gh pr view:*)".to_string(),
+                "write(/build/tmp/mayfly/r.md)".into(),
+                format!("write({})", cwd.join("notes/out.md").display()),
+            ]
+        );
+        assert!(r.has_shell);
+        // Only the out-of-project directory needs --add-dir.
+        assert_eq!(r.add_dirs, [std::path::PathBuf::from("/build/tmp/mayfly")]);
+
+        // No Bash rule: the shell is denied outright, closing the auto-approved reads.
+        let mut t = task(Harness::Copilot);
+        t.tools = vec!["Read".into(), "Edit(//tmp/x.md)".into()];
+        let a = copilot::copilot_args(&t, "p".into()).unwrap();
+        assert!(a
+            .windows(2)
+            .any(|w| w[0] == "--deny-tool" && w[1] == "shell"));
+        assert!(unenforced(&t).is_empty());
+        t.tools.push("Bash(gh pr list:*)".into());
+        assert!(unenforced(&t)[0].contains("auto-approves"));
+
+        for bad in [
+            "Read(src/**)",
+            "Bash(gh *)",
+            "Edit(src/**)",
+            "Edit(out.md)",
+            "WebFetch",
+            "mcp__mailgate__mail_read",
+        ] {
+            let mut t = task(Harness::Copilot);
+            t.tools = vec![bad.into()];
+            assert!(check_supported(&t).is_err(), "{bad} should be refused");
+        }
+        let mut t = task(Harness::Copilot);
+        t.tools = vec!["Read".into()];
+        t.mcp_servers = vec!["mailgate".into()];
+        assert!(check_supported(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("mcp_servers are only enforceable on claude/ccf"));
+        let mut t = task(Harness::Copilot);
+        t.budget = Some(Budget {
+            max_turns: None,
+            max_usd: Some(1.0),
+        });
+        assert!(check_supported(&t).is_err());
     }
 
     #[test]
