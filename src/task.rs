@@ -80,6 +80,8 @@ pub enum Harness {
     Cxf,
     Cece,
     Opencode,
+    /// GitHub Copilot CLI (`copilot -p`), MAYFLY-16.
+    Copilot,
     Exec,
 }
 
@@ -93,6 +95,7 @@ impl std::fmt::Display for Harness {
             Harness::Cxf => "cxf",
             Harness::Cece => "cece",
             Harness::Opencode => "opencode",
+            Harness::Copilot => "copilot",
             Harness::Exec => "exec",
         };
         write!(f, "{s}")

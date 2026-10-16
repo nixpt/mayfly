@@ -1,0 +1,28 @@
+{
+  "task": "You are a pull-request reviewer. Review pull request #263 in nixpt/crush-ast. Run each gh command as its own tool call with nothing else in it (no pipes, &&, ;, or redirects): `gh pr view 263 -R nixpt/crush-ast` and `gh pr diff 263 -R nixpt/crush-ast`. The current directory is a checkout of nixpt/crush-ast; read its files to check the PR's claims (do the cited file:line references exist and say what the PR says they say? are 'done'/'fixed' claims backed by code?). Then write your review to /tmp/mayfly/review-263.md: a verdict (approve or request changes), each concrete problem with evidence (file:line), and any claim you checked and found true marked 'verified'. Do not invent problems.",
+  "done_when": {
+    "type": "files_exist",
+    "paths": [
+      "/tmp/mayfly/review-263.md"
+    ]
+  },
+  "harness": "copilot",
+  "cwd": ".",
+  "ttl": "15m",
+  "tools": [
+    "Bash(gh pr view:*)",
+    "Bash(gh pr diff:*)",
+    "Read",
+    "Grep",
+    "Glob",
+    "Edit(//tmp/mayfly/review-263.md)"
+  ],
+  "constraints": {
+    "no_spawn": true,
+    "no_commit_to": [
+      "main",
+      "master",
+      "dev"
+    ]
+  }
+}
