@@ -1,0 +1,17 @@
+{
+  "id": "mf-e0b62258",
+  "state": "done",
+  "harness": "claude",
+  "task": "Read unread DMs under /workspace/.squad/state/comms/dm/foreman/inbox and print a short digest (from, gist, suggested action). Write nothing to disk.",
+  "cwd": ".",
+  "ttl": "10m",
+  "created_at": "2026-10-08T23:43:09.339721898Z",
+  "updated_at": "2026-10-08T23:43:09.342236204Z",
+  "pid": null,
+  "expire_reason": "done_when satisfied",
+  "dir": "/workspace/projects/mayfly/.jagent/local/mayfly/mf-e0b62258",
+  "worktree_repo": null,
+  "worktree_path": null,
+  "worktree_branch": null,
+  "worktree_keep": false
+}

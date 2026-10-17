@@ -1,0 +1,7 @@
+I could not finish: the digest file does not exist, so I have not printed `MAYFLY_DONE`.
+
+- **Mail check:** `mail_list` on INBOX with `unseen_only` returned zero messages. Nothing was read, summarized, or drafted, and nothing was sent.
+- **Accounts lookup denied:** `mail_accounts` was refused by the permission mode, so the mail check ran against the default account. I did not confirm the account name.
+- **File write denied:** `Write` to `/build/tmp/mayfly/mailer-digest.md` was refused by the same permission mode. I did not try another tool to write the file, since that would get around the denial.
+
+The digest content I would write is: "No unread messages in INBOX," with the notes above. To finish, allow the `Write` call to `/build/tmp/mayfly/mailer-digest.md` (or create that file another way) and re-run the task. If you also want the account name confirmed, allow `mail_accounts`.

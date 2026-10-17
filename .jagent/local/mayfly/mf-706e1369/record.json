@@ -1,0 +1,17 @@
+{
+  "id": "mf-706e1369",
+  "state": "done",
+  "harness": "claude",
+  "task": "Survey open PRs and their CI for nixpt/mayfly, nixpt/squadmail and nixpt/buckets. Run exactly one gh command per tool call, with nothing else in it (no loops, pipes, &&, ;, redirects, echo or mkdir): `gh pr list -R nixpt/<repo> --state open --json number,title,headRefName,statusCheckRollup --limit 50` for each repo. The directory /build/tmp/mayfly already exists. Write /build/tmp/mayfly/pr-survey.md: per repo, a table of number, title, branch, checks summary (or 'no checks').",
+  "cwd": ".",
+  "ttl": "10m",
+  "created_at": "2026-10-08T23:43:58.479946627Z",
+  "updated_at": "2026-10-08T23:44:06.242244855Z",
+  "pid": null,
+  "expire_reason": "done_when satisfied",
+  "dir": "/workspace/projects/mayfly/.jagent/local/mayfly/mf-706e1369",
+  "worktree_repo": null,
+  "worktree_path": null,
+  "worktree_branch": null,
+  "worktree_keep": false
+}

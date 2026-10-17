@@ -1,0 +1,1 @@
+Permission allow rule (--allowed-tools): Write(/build/tmp/mayfly/mailer-digest.md) is not matched by file permission checks — only Edit(path) rules are. Use Edit(/build/tmp/mayfly/mailer-digest.md) instead (Edit rules cover all file-editing tools).

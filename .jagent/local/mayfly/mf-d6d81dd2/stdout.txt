@@ -1,0 +1,12 @@
+I couldn't do the survey. The Bash tool was denied, and `gh` can only run through it. I haven't written `/build/tmp/mayfly/pr-survey.md`, and I haven't printed `MAYFLY_DONE`, because the done condition isn't met.
+
+I didn't try another route to the GitHub data. Writing the file by hand with made-up PR data would also be wrong.
+
+To finish, I need Bash permission for these commands:
+
+```
+mkdir -p /build/tmp/mayfly
+gh pr list -R nixpt/<repo> --state open --json number,title,headRefName,statusCheckRollup --limit 100
+```
+
+Run once each for `mayfly`, `squadmail`, and `buckets`. Then I'll turn the output into `pr-survey.md` with repo, number, title, and a checks summary. Nothing else is needed, and I won't commit anything.

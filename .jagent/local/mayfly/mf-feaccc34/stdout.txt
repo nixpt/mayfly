@@ -1,0 +1,8 @@
+I could not finish. The digest file was not written, so the done condition is not met and I am not printing `MAYFLY_DONE`.
+
+- **Mail check:** mailgate lists one account, `foreman@crushlang.org`, status connected. A `mail_list` for unseen INBOX messages returned zero messages. There was nothing to summarize, and I drafted and sent nothing.
+- **Blocked step:** writing `/build/tmp/mayfly/mailer-digest.md` was denied because this session is in "don't ask" permission mode. I did not try another route to write that path, since that would get around the denial.
+
+The intended digest content is: account crushlang, INBOX, unseen filter, 0 unread messages, no suggested actions, no drafts.
+
+To finish, either allow the Write to `/build/tmp/mayfly/mailer-digest.md` and I'll rerun the step, or write that file yourself with the content above. If you want the check repeated later, run the mayfly again once mail has arrived.

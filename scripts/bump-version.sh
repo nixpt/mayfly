@@ -44,13 +44,52 @@ if [ -z "$LAST_TAG" ]; then
   exit 0
 fi
 
-SUBJECTS="$(git log --pretty=format:'%s%n%b' "${LAST_TAG}..HEAD" 2>/dev/null || true)"
+# Conventional-commits is precise about WHERE each marker lives:
+#   feat: / fix: / type!:   are SUBJECT-line prefixes
+#   BREAKING CHANGE:        is a FOOTER (body) trailer
+# Scanning the whole body for subject prefixes misfires on prose — a commit
+# message that merely DISCUSSES "feat:" or "fix:" would match.
+SUBJECT_LINES="$(git log --pretty=format:'%s' "${LAST_TAG}..HEAD" 2>/dev/null || true)"
+BODY_LINES="$(git log --pretty=format:'%b' "${LAST_TAG}..HEAD" 2>/dev/null || true)"
+
+is_breaking() {
+  printf '%s' "$SUBJECT_LINES" | grep -qE '^[a-z]+(\([^)]*\))?!:' && return 0
+  printf '%s' "$BODY_LINES"    | grep -qE '^BREAKING[[:space:]]CHANGE:' && return 0
+  return 1
+}
+has_feat() { printf '%s' "$SUBJECT_LINES" | grep -qE '^feat(\([^)]*\))?!?:'; }
+has_fix()  { printf '%s' "$SUBJECT_LINES" | grep -qE '^fix(\([^)]*\))?!?:'; }
+
+# Release-worthiness gate: only feat/fix/breaking mint a version. docs, chore,
+# test, ci, refactor, style, perf, build are a no-op. Set BUMPVER_RELEASE_ALL=1
+# for the old tag-on-every-push behaviour.
+if [ "${BUMPVER_RELEASE_ALL:-0}" != "1" ] && ! is_breaking && ! has_feat && ! has_fix; then
+  log "no feat:/fix:/breaking commits since ${LAST_TAG} — nothing to release"
+  exit 0
+fi
+
 bump="patch"
-if printf '%s' "$SUBJECTS" | grep -qiE '(^|[[:space:]])BREAKING[[:space:]]CHANGE|^[a-z]+(\([^)]*\))?!:'; then
+if is_breaking; then
   bump="major"
-elif printf '%s' "$SUBJECTS" | grep -qiE '^feat(\([^)]*\))?:'; then
+elif has_feat; then
   bump="minor"
 fi
+
+# Package names of this workspace's own members: the root [package] plus each
+# [workspace] member dir's [package] name (a "." member is the root itself).
+# Scopes the Cargo.lock text rewrite so it never bumps a path dependency that
+# coincidentally shares the version — path deps also carry no `source =` line.
+workspace_member_names() {
+  awk '/^\[package\]/{f=1;next}/^\[/{f=0}f&&/^name[[:space:]]*=/{v=$0;sub(/^[^=]*=[[:space:]]*"?/,"",v);sub(/".*/,"",v);gsub(/[[:space:]]/,"",v);print v;exit}' Cargo.toml
+  awk '/^\[workspace\]/{f=1;next}/^\[/{f=0}f&&/^members[[:space:]]*=/{line=$0;sub(/^[^=]*=[[:space:]]*/,"",line);gsub(/[][",]/," ",line);print line}' Cargo.toml \
+    | tr ' ' '\n' \
+    | while IFS= read -r d; do
+        [ -n "$d" ] || continue
+        [ "$d" = "." ] && continue
+        [ -f "$d/Cargo.toml" ] || continue
+        awk '/^\[package\]/{f=1;next}/^\[/{f=0}f&&/^name[[:space:]]*=/{v=$0;sub(/^[^=]*=[[:space:]]*"?/,"",v);sub(/".*/,"",v);gsub(/[[:space:]]/,"",v);print v;exit}' "$d/Cargo.toml"
+      done
+}
 
 read_version() {
   if grep -q '^\[workspace\.package\]' Cargo.toml 2>/dev/null; then
@@ -121,24 +160,34 @@ if [ -f Cargo.toml ] && command -v cargo >/dev/null 2>&1; then
   # the CI runner and failed fast there (swallowed by ||), shipping stale locks.
   cargo update --workspace >/dev/null 2>&1 || true
   # Path-dep repos (e.g. zorro's optional ../zpu) make EVERY cargo command fail
-  # on a bare CI runner (siblings not checked out) — so verify the lock actually
-  # carries $NEXT and fall back to a text rewrite: bump version lines equal to
-  # $CUR in stanzas WITHOUT a 'source =' line (workspace/path packages only —
-  # registry packages always carry source). Same bytes cargo would write.
-  if [ -f Cargo.lock ] && ! grep -q "^version = \"$NEXT\"" Cargo.lock; then
-    awk -v cur="$CUR" -v nxt="$NEXT" '
-      /^\[\[package\]\]/ { for (i=0;i<n;i++) print buf[i]; n=0; inpkg=1; src=0 }
-      inpkg { buf[n++]=$0; if ($0 ~ /^source = /) src=1
-              if ($0=="" ) { for (i=0;i<n;i++) { l=buf[i]
-                  if (!src && l=="version = \"" cur "\"") l="version = \"" nxt "\""
-                  print l } ; n=0; inpkg=0; src=0 }
-              next }
-      { print }
-      END { for (i=0;i<n;i++) { l=buf[i]
-              if (!src && l=="version = \"" cur "\"") l="version = \"" nxt "\""
-              print l } }
-    ' Cargo.lock > Cargo.lock.tmp && mv Cargo.lock.tmp Cargo.lock
-    log "Cargo.lock: text-fallback bump $CUR → $NEXT (cargo unavailable/failed here)"
+  # on a bare CI runner (siblings not checked out) — so the lock may still
+  # carry $CUR after the `cargo update` above. Fall back to a text rewrite
+  # that bumps ONLY this workspace's own members, keyed by name: path deps also
+  # have no `source =` line and can coincidentally share $CUR (flownet has
+  # cezanne/contextgc at 0.1.1 next to flownet at 0.1.1), so a source-less-only
+  # match would over-bump them. The old guard `! grep "^version = \"$NEXT\""`
+  # also false-positived on unrelated registry deps already at $NEXT
+  # (foldhash/matchers at 0.2.0), skipping the rewrite and shipping a stale
+  # lock (flownet v0.2.0 shipped Cargo.lock still pinned at 0.1.1).
+  if [ -f Cargo.lock ]; then
+    members="$(workspace_member_names)"
+    if [ -n "$members" ]; then
+      awk -v cur="$CUR" -v nxt="$NEXT" -v members="$members" '
+        BEGIN { n=split(members, m, "\n"); for (i=1;i<=n;i++) if (m[i]!="") want[m[i]]=1 }
+        /^\[\[package\]\]/ { for (i=0;i<nb;i++) print buf[i]; nb=0; inpkg=1; member=0 }
+        inpkg { buf[nb++]=$0
+                if ($0 ~ /^name = /) { nm=$0; sub(/^name = "/,"",nm); sub(/".*/,"",nm); member=(nm in want) }
+                if ($0=="") { for (i=0;i<nb;i++) { l=buf[i]
+                    if (member && l=="version = \"" cur "\"") l="version = \"" nxt "\""
+                    print l } ; nb=0; inpkg=0; member=0 }
+                next }
+        { print }
+        END { for (i=0;i<nb;i++) { l=buf[i]
+                if (member && l=="version = \"" cur "\"") l="version = \"" nxt "\""
+                print l } }
+      ' Cargo.lock > Cargo.lock.tmp && mv Cargo.lock.tmp Cargo.lock
+      log "Cargo.lock: text rewrite $CUR → $NEXT for workspace members (no-op if cargo update already bumped them)"
+    fi
   fi
 fi
 
@@ -198,6 +247,25 @@ log "tagged v${NEXT}"
 if git remote get-url origin >/dev/null 2>&1; then
   git push origin "HEAD:${MAIN_BRANCH}" "v${NEXT}"
   log "pushed ${MAIN_BRANCH} + v${NEXT} to origin"
+  # A pushed tag is not a GitHub Release — the Releases page / `gh release
+  # list` only shows actual Release objects. Pre-1.0, stay tag-only on
+  # purpose (captain: "cut a release once it hits 1.0, don't need release
+  # for every tag, but tag is important" — matches checkstand's own state:
+  # 13 tags, zero Releases, by design). Once a repo crosses 1.0, every bump
+  # gets a real Release. Non-fatal: a missing `gh` or an already-existing
+  # release (re-run, race) must not fail the bump — the tag+push already
+  # succeeded and is the source of truth either way.
+  if [ "$MA" -ge 1 ] 2>/dev/null; then
+    if command -v gh >/dev/null 2>&1; then
+      gh release create "v${NEXT}" --title "v${NEXT}" --generate-notes --target "${MAIN_BRANCH}" \
+        && log "created GitHub Release v${NEXT}" \
+        || log "gh release create failed (non-fatal) — tag+push already succeeded"
+    else
+      log "gh CLI not available — tag pushed, no GitHub Release object created"
+    fi
+  else
+    log "v${NEXT} is pre-1.0 — tag only, no GitHub Release (cut one by hand once this repo hits 1.0)"
+  fi
 else
   log "no 'origin' remote — commit+tag are local only."
 fi

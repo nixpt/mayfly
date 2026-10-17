@@ -1,0 +1,17 @@
+{
+  "id": "mf-d6d81dd2",
+  "state": "failed",
+  "harness": "claude",
+  "task": "Survey open PRs + CI via gh for nixpt/mayfly, nixpt/squadmail, nixpt/buckets; write /build/tmp/mayfly/pr-survey.md (repo, number, title, checks summary).",
+  "cwd": ".",
+  "ttl": "10m",
+  "created_at": "2026-10-08T23:43:09.339728175Z",
+  "updated_at": "2026-10-08T23:43:14.842638207Z",
+  "pid": null,
+  "expire_reason": "harness exited 0 but done_when did not pass; printed MAYFLY_DONE but done_when did not pass",
+  "dir": "/workspace/projects/mayfly/.jagent/local/mayfly/mf-d6d81dd2",
+  "worktree_repo": null,
+  "worktree_path": null,
+  "worktree_branch": null,
+  "worktree_keep": false
+}
