@@ -71,6 +71,7 @@
         "cxf",
         "cece",
         "opencode",
+        "copilot",
         "exec"
       ]
     },
@@ -160,12 +161,12 @@
     },
     "model": {
       "type": "string",
-      "description": "Model for the harness: claude/ccf --model, codex/cxf -m, opencode -m. Other harnesses refuse the task."
+      "description": "Model for the harness: claude/ccf --model, codex/cxf -m, opencode -m, copilot --model. Other harnesses refuse the task."
     },
     "read_only": {
       "type": "boolean",
       "default": false,
-      "description": "Enforced read-only hatch: claude/ccf run with --tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config (no skip-permissions); codex/cxf with --sandbox read-only. Other harnesses refuse the task. The agent cannot write files, so done_when must not require writes. Incompatible with tools."
+      "description": "Enforced read-only hatch: claude/ccf run with --tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config (no skip-permissions); codex/cxf with --sandbox read-only; copilot with --deny-tool write/shell/url --disable-builtin-mcps. Other harnesses refuse the task. The agent cannot write files, so done_when must not require writes. Incompatible with tools."
     },
     "tools": {
       "type": "array",
@@ -173,7 +174,7 @@
         "type": "string",
         "minLength": 1
       },
-      "description": "Claude Code tool / permission-rule allowlist (MAYFLY-11). When set, claude/ccf use --tools <builtins> --allowedTools <all> --permission-mode dontAsk --strict-mcp-config and never --dangerously-skip-permissions. Incompatible with read_only. Other harnesses refuse."
+      "description": "Claude Code tool / permission-rule allowlist (MAYFLY-11). When set, claude/ccf use --tools <builtins> --allowedTools <all> --permission-mode dontAsk --strict-mcp-config and never --dangerously-skip-permissions. copilot translates Bash(cmd[:*]) → shell(...), Edit(//abs or /project-relative file) → write(/abs), bare Read/Grep/Glob/LS → no rule, and refuses globs, scoped reads and MCP tools (it has no mcp_servers). Incompatible with read_only. Other harnesses refuse."
     },
     "mcp_servers": {
       "type": "array",

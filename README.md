@@ -48,14 +48,23 @@ Needs host harness binaries on `PATH` for the runners you use (`cursor-agent`, `
 
 ## Model, read-only, budgets, success (MAYFLY-8)
 
-| Field | claude / ccf | codex / cxf | opencode | cursor / cece / exec |
-|---|---|---|---|---|
-| `model` | `--model` | `-m` | `-m` (beats `MAYFLY_OPENCODE_MODEL`) | **refused** |
-| `read_only: true` | `--tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config`, no skip-permissions | `--sandbox read-only` | **refused** | **refused** |
-| `tools` | `--tools <builtins> --allowedTools <all> --permission-mode dontAsk --strict-mcp-config`, no skip-permissions | **refused** | **refused** | **refused** |
-| `mcp_servers` | hatch-local `--mcp-config` from `~/.claude.json` + `--strict-mcp-config` (requires `tools`) | **refused** | **refused** | **refused** |
-| `budget.max_usd` | `--max-budget-usd` | **refused** | **refused** | **refused** |
-| `budget.max_turns` | not enforced (no CLI turn cap); `validate` prints a note | same | same | same |
+| Field | claude / ccf | codex / cxf | opencode | copilot | cursor / cece / exec |
+|---|---|---|---|---|---|
+| `model` | `--model` | `-m` | `-m` (beats `MAYFLY_OPENCODE_MODEL`) | `--model` | **refused** |
+| `read_only: true` | `--tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config`, no skip-permissions | `--sandbox read-only` | **refused** | `--deny-tool write`/`shell`/`url` + `--disable-builtin-mcps` | **refused** |
+| `tools` | `--tools <builtins> --allowedTools <all> --permission-mode dontAsk --strict-mcp-config`, no skip-permissions | **refused** | **refused** | translated to `--allow-tool` rules (below) | **refused** |
+| `mcp_servers` | hatch-local `--mcp-config` from `~/.claude.json` + `--strict-mcp-config` (requires `tools`) | **refused** | **refused** | **refused** | **refused** |
+| `budget.max_usd` | `--max-budget-usd` | **refused** | **refused** | **refused** | **refused** |
+| `budget.max_turns` | not enforced (no CLI turn cap); `validate` prints a note | same | same | same | same |
+
+**copilot `tools` (MAYFLY-16).** Rules are translated into Copilot permission rules, never broadened
+silently: `Bash` → `shell`, `Bash(cmd)` / `Bash(prefix:*)` → `shell(cmd)` / `shell(prefix:*)`;
+`Edit` → `write`; `Edit(//abs/file)` → `write(/abs/file)` and `Edit(/file)` → `write(<cwd>/file)`, with
+`--add-dir` for a directory outside the project; bare `Read`/`Grep`/`Glob`/`LS` need no rule. Globs, path-scoped
+reads, bare relative `Edit(file)` (Copilot would match that name in *any* directory), MCP tools and any other
+tool are refused. With no `Bash` rule the shell is denied outright. With one, `validate` notes that Copilot also
+auto-approves its built-in read-only commands (`ls`, `cat`, `pwd`, `git log`, `gh pr list`, …): writes, network and
+other commands stay denied (live-verified, Copilot CLI 1.0.98).
 
 `tools` and `read_only` are mutually exclusive. `mcp_servers` without `tools` is refused. An
 `mcp__<server>__*` tool whose server is not listed in `mcp_servers` is refused. Unknown
@@ -145,6 +154,7 @@ See [`DESIGN.md`](DESIGN.md) for the full contract (aging ladder, adapters, fuzz
 | `ccf` | same argv as `claude` | needs fleet `ccf`/flownet Anthropic env — smoke OK |
 | `cxf` | `codex --profile flownet exec …` | needs `FLOWNET_TOKEN_CODEX` — smoke OK |
 | `opencode` | `opencode run --auto --dir …` | set `MAYFLY_OPENCODE_MODEL` (e.g. `opencode/big-pickle`) — smoke OK |
+| `copilot` | `copilot -p … -s --allow-all` (or permission rules, above) | GitHub Copilot CLI (`npm i -g @github/copilot`); auth via `GH_TOKEN`/`COPILOT_GITHUB_TOKEN` or `copilot login`; each prompt uses the account's premium requests. In a Codespace, SSH sessions lack `GITHUB_TOKEN`: `set -a; . /workspaces/.codespaces/shared/.env; set +a; export GH_TOKEN=$GITHUB_TOKEN` — live OK (4 hatches, below) |
 | `claude` | `claude -p … --dangerously-skip-permissions` | needs Anthropic or `ccf` env |
 | `codex` | `codex exec --sandbox workspace-write …` | raw Codex; prefer `cxf` on this fleet |
 | `cece` | `cece-rs -w … -p … --afk` | fleet binary; subject to provider budget |
@@ -186,6 +196,7 @@ curated tools — no `--dangerously-skip-permissions`). All three verified live 
 | `mailer.json` | Unread INBOX → digest file (+ drafts only when the task names recipients) | `tools` + `mcp_servers: ["mailgate"]`: accounts/list/read/search/draft + `Edit(//…digest)`; no `mail_send`, no Bash |
 | `inbox-digest.json` | Unread bridge DMs → digest file, grouped by sender, duplicates collapsed | `tools`: `Bash(…/squad-msg --list:*)` + `Edit(//…digest)`; run with `AGENT_NAME=<agent>` |
 | `pr-survey.json` | Open PRs + CI across named `nixpt/*` repos → report file | `tools`: `Bash(gh pr list/view/checks:*)` + `Edit(//…report)` |
+| `pr-reviewer-copilot.json` | Review one PR (edit the number) → review file with verdict, problems with file:line evidence, verified claims | copilot `tools`: `Bash(gh pr view/diff:*)` + `Read`/`Grep`/`Glob` + `Edit(//…review)` |
 
 Writing a fleet task:
 - File rules are `Edit(//abs/path)`: `Write(...)` rules never match, and `/x` in a rule is project-root-relative.
