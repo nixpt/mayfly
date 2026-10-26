@@ -11,6 +11,17 @@ rather than written at the time.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-26
+
+- Merge pull request #15 from nixpt/agent/vega/MAYFLY-16
+- Merge pull request #14 from nixpt/agent/nixp/MAYFLY-14-ticket
+- docs(MAYFLY-16): copilot harness docs, ticket, pr-reviewer fleet mayfly
+- feat(MAYFLY-16): copilot harness — GitHub Copilot CLI adapter
+- tickets: MAYFLY-15 — retire the cece harness
+- tickets: MAYFLY-14 — bro as a fleet engine (pheobe/mayfly/agent-launch path)
+
+
+
 ## [0.2.3] - 2026-10-08
 
 - Merge pull request #13 from nixpt/agent/foreman/MAYFLY-13
