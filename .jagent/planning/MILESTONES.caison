@@ -1,0 +1,168 @@
+@caison { version: "1.0" }
+# mayfly milestones. Written by chota (borderland lane) on 2026-11-18 from ROADMAP.md (M0-M9), STATE.md, TASKS.md, the MAYFLY ticket
+# files, CHANGELOG.md, tags v0.1.0..v0.3.0 and merged PRs #1-#15. ROADMAP/STATE/TASKS stop at 2026-08-25 (v0.1.6) and are stale;
+# status below follows the tickets, tags and merged PRs instead.
+
+schema: "milestones/1"
+
+project: {
+  name: "mayfly"
+  kind: "repo"
+  lifecycle: "shipped" ~0.7 @verified { at: "2026-11-18", by: "chota" }
+  lifecycle_since: "2026-08-09"
+  home: "zorro"
+  ticket_prefix: "MAYFLY"
+  root: "6fe8e0d55cd61fcec7732ce55261d0b69d2e6bc1"
+  summary: "released through v0.3.0 (2026-10-26): CLI, adapters for claude/cursor/codex/opencode/copilot, worktree isolation, hardened local lifecycle, per-project fleet runners; remote adapter and the bro harness are open"
+  north_star: "a harness-agnostic launcher for ephemeral single-purpose agents: validate a concrete task, hatch into a harness, watch a mechanical done_when and a hard TTL, tear down, leave only artifacts"
+  stewards: ["arisu", "chota"]
+  evidence: {
+    default_branch: "main"
+    registries: []
+  }
+}
+
+milestones: [
+  {
+    id: "M0"
+    title: "foundation: CLI, schema, fuzz gate, adapters, TTL"
+    status: "done" @verified { at: "2026-11-18", by: "chota" }
+    done_at: "2026-08-09"
+    version: "v0.1.0"
+    done_when: [
+      { claim: "v0.1.0 tagged", check: { kind: "tag", pattern: "v0.1.0" } },
+    ]
+  },
+  {
+    id: "M1"
+    title: "isolation: --worktree via public buckets"
+    status: "done" @verified { at: "2026-11-18", by: "chota" }
+    tickets: ["MAYFLY-1"]
+    depends_on: ["M0"]
+    done_when: [
+      { claim: "MAYFLY-1 done", check: { kind: "tickets", status: "Done" } },
+    ]
+  },
+  {
+    id: "M2"
+    title: "live adapters: real harness end to end"
+    status: "done" @verified { at: "2026-11-18", by: "chota" }
+    done_at: "2026-08-09"
+    version: "v0.1.1"
+    tickets: ["MAYFLY-3"]
+    depends_on: ["M1"]
+    done_when: [
+      { claim: "MAYFLY-3 done", check: { kind: "tickets", status: "Done" } },
+      { claim: "live adapter smoke merged (PR #1)", check: { kind: "merged", pr: "1" } },
+    ]
+  },
+  {
+    id: "M4"
+    title: "release and fleet wire"
+    status: "done" @verified { at: "2026-11-18", by: "chota" }
+    done_at: "2026-08-09"
+    version: "v0.1.1"
+    tickets: ["MAYFLY-4"]
+    depends_on: ["M2"]
+    done_when: [
+      { claim: "MAYFLY-4 done", check: { kind: "tickets", status: "Done" } },
+      { claim: "v0.1.1 tagged", check: { kind: "tag", pattern: "v0.1.1" } },
+    ]
+  },
+  {
+    id: "M5"
+    title: "local reliability: output draining, process-group expiry, error-safe worktree cleanup (MAYFLY-6)"
+    status: "done" ~0.7 @verified { at: "2026-11-18", by: "chota" }
+    done_at: "2026-08-25"
+    tickets: ["MAYFLY-6"]
+    depends_on: ["M4"]
+    done_when: [
+      { claim: "local hatch lifecycle hardened (PR #5)", check: { kind: "merged", pr: "5" } },
+      "an integration fixture verifies descendant termination and cleanup against a real worktree provider",
+    ]
+    notes: "PR #5 merged 2026-08-25, but the MAYFLY-6 ticket still says In Progress and keeps one success criterion open (the real-worktree integration fixture), so this is done at 0.7, not 1."
+  },
+  {
+    id: "M5b"
+    title: "fleet dispatch runners: model/read-only/budget gaps, per-project runners, tools and MCP allowlists, fleet mayflies"
+    status: "done" @verified { at: "2026-11-18", by: "chota" }
+    done_at: "2026-10-08"
+    version: "v0.2.0"
+    tickets: ["MAYFLY-8", "MAYFLY-9", "MAYFLY-10", "MAYFLY-11"]
+    depends_on: ["M5"]
+    done_when: [
+      { claim: "runner gaps merged (PR #7, MAYFLY-8)", check: { kind: "merged", pr: "7" } },
+      { claim: "per-project runners merged (PR #8, MAYFLY-9)", check: { kind: "merged", pr: "8" } },
+      { claim: "runner defs per worktree merged (PR #9, MAYFLY-10)", check: { kind: "merged", pr: "9" } },
+      { claim: "tools and MCP allowlist merged (PR #11, MAYFLY-11)", check: { kind: "merged", pr: "11" } },
+      { claim: "fleet file rules and done_when guard merged (PR #12, #13)", check: { kind: "merged", pr: "13" } },
+    ]
+    notes: "Not in ROADMAP.md, whose last version row is v0.1.4. MAYFLY-12 and MAYFLY-13 have no ticket files. MAYFLY-9 reads 'Done (PR)' and MAYFLY-10 has no Status line, so no tickets check here."
+  },
+  {
+    id: "M5c"
+    title: "copilot harness: GitHub Copilot CLI adapter (MAYFLY-16)"
+    status: "done" @verified { at: "2026-11-18", by: "chota" }
+    done_at: "2026-10-26"
+    version: "v0.3.0"
+    tickets: ["MAYFLY-16"]
+    depends_on: ["M5b"]
+    done_when: [
+      { claim: "MAYFLY-16 done", check: { kind: "tickets", status: "Done" } },
+      { claim: "copilot harness merged (PR #15)", check: { kind: "merged", pr: "15" } },
+      { claim: "v0.3.0 tagged", check: { kind: "tag", pattern: "v0.3.0" } },
+    ]
+  },
+  {
+    id: "H14"
+    title: "bro harness: bro exec as a fleet engine, then retire the cece harness (MAYFLY-14, MAYFLY-15)"
+    status: "next" ~0.5
+    tickets: ["MAYFLY-14", "MAYFLY-15"]
+    depends_on: ["M5c"]
+    done_when: [
+      { claim: "MAYFLY-14 and MAYFLY-15 done", check: { kind: "tickets", status: "Done" } },
+    ]
+    notes: "Both Open; MAYFLY-14 waits on bro-cli BRO-134 (bro exec engine flags). Ticket-only PR #14 merged."
+  },
+  {
+    id: "M6"
+    title: "contract parity: schema, DESIGN and runtime agree"
+    status: "planned" ~0.3
+    depends_on: ["M5"]
+    done_when: [
+      "every documented task field is implemented or explicitly removed",
+    ]
+    notes: "ROADMAP names MAYFLY-7 for this; no MAYFLY-7 ticket file exists, and MAYFLY-8 to 13 may have covered part of it. Not verified."
+  },
+  {
+    id: "M3"
+    title: "aging inject: warn/narrow messages into live sessions"
+    status: "planned" ~0.2
+    tickets: ["MAYFLY-2"]
+    depends_on: ["M2"]
+    done_when: [
+      "best-effort inject when a lifespan crosses thresholds",
+    ]
+    notes: "MAYFLY-2 is Parked (post-v0.1.1, optional, no owner)."
+  },
+  {
+    id: "M7"
+    title: "remote design: execution handles for non-local workers (Copilot cloud-agent ADR)"
+    status: "planned" ~0.3
+    tickets: ["MAYFLY-5"]
+    depends_on: ["M6"]
+    done_when: [
+      "MAYFLY-5 ADR, remote task example, auth and expiry semantics",
+    ]
+    notes: "MAYFLY-5 is Backlog."
+  },
+  {
+    id: "M8"
+    title: "remote MVP: bounded remote adapter behind the agreed interface"
+    status: "planned" ~0.2
+    depends_on: ["M7"]
+    done_when: [
+      "mocked backend plus authenticated disposable-repo smoke",
+    ]
+  },
+]
