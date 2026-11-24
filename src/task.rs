@@ -78,7 +78,6 @@ pub enum Harness {
     Codex,
     /// Codex under fleet `cxf` shape (`--profile flownet` + FLOWNET_TOKEN_CODEX).
     Cxf,
-    Cece,
     Opencode,
     /// GitHub Copilot CLI (`copilot -p`), MAYFLY-16.
     Copilot,
@@ -93,7 +92,6 @@ impl std::fmt::Display for Harness {
             Harness::Cursor => "cursor",
             Harness::Codex => "codex",
             Harness::Cxf => "cxf",
-            Harness::Cece => "cece",
             Harness::Opencode => "opencode",
             Harness::Copilot => "copilot",
             Harness::Exec => "exec",

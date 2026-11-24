@@ -48,7 +48,7 @@ Needs host harness binaries on `PATH` for the runners you use (`cursor-agent`, `
 
 ## Model, read-only, budgets, success (MAYFLY-8)
 
-| Field | claude / ccf | codex / cxf | opencode | copilot | cursor / cece / exec |
+| Field | claude / ccf | codex / cxf | opencode | copilot | cursor / exec |
 |---|---|---|---|---|---|
 | `model` | `--model` | `-m` | `-m` (beats `MAYFLY_OPENCODE_MODEL`) | `--model` | **refused** |
 | `read_only: true` | `--tools Read,Grep,Glob --permission-mode dontAsk --strict-mcp-config`, no skip-permissions | `--sandbox read-only` | **refused** | `--deny-tool write`/`shell`/`url` + `--disable-builtin-mcps` | **refused** |
@@ -157,7 +157,6 @@ See [`DESIGN.md`](DESIGN.md) for the full contract (aging ladder, adapters, fuzz
 | `copilot` | `copilot -p … -s --allow-all` (or permission rules, above) | GitHub Copilot CLI (`npm i -g @github/copilot`); auth via `GH_TOKEN`/`COPILOT_GITHUB_TOKEN` or `copilot login`; each prompt uses the account's premium requests. In a Codespace, SSH sessions lack `GITHUB_TOKEN`: `set -a; . /workspaces/.codespaces/shared/.env; set +a; export GH_TOKEN=$GITHUB_TOKEN` — live OK (4 hatches, below) |
 | `claude` | `claude -p … --dangerously-skip-permissions` | needs Anthropic or `ccf` env |
 | `codex` | `codex exec --sandbox workspace-write …` | raw Codex; prefer `cxf` on this fleet |
-| `cece` | `cece-rs -w … -p … --afk` | fleet binary; subject to provider budget |
 | `exec` | `sh -c <done_when>` | no LLM — smoke OK |
 
 Fleet wrappers `ccf` / `cxf` are shell functions; export their env (or run under a login zsh that defines them) before `mayfly hatch` with harness `ccf`/`cxf`.

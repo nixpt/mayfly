@@ -8,7 +8,7 @@ Core hatch loop + buckets worktree + live adapters shipped. MAYFLY-2 (aging
 
 ## Problem
 
-Agent harnesses (Cursor, Claude Code, Codex, cece, …) are good at long sessions.
+Agent harnesses (Cursor, Claude Code, Codex, …) are good at long sessions.
 They are bad at **disposable single-shot work**: fix this flake, add this flag,
 run this migration check. Without a contract, agents:
 
@@ -155,7 +155,6 @@ expire(child) -> ExitReport
 | `cursor` | `cursor-agent -p --yolo --trust …` |
 | `codex` | `codex exec --sandbox workspace-write --skip-git-repo-check …` |
 | `cxf` | `codex --profile flownet exec …` (+ `FLOWNET_TOKEN_CODEX`; fleet `cxf` shape) |
-| `cece` | `cece-rs -w <cwd> -p … --afk --output-format text` |
 | `opencode` | `opencode run --format json --auto --dir <cwd> …` (+ optional `MAYFLY_OPENCODE_MODEL`) |
 | `exec` | no LLM — run `done_when.command` only (dry sanity) |
 

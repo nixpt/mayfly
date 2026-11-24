@@ -278,6 +278,14 @@ fn load_task(path: &PathBuf, runner: Option<&str>, cwd: &std::path::Path) -> Res
         };
         value = project::merge_under(&r.defaults, value);
     }
+    // Retired harness (MAYFLY-15): name the reason instead of serde's bare variant list.
+    if value.get("harness").and_then(|h| h.as_str()) == Some("cece") {
+        bail!(
+            "the `cece` harness was removed: the cece line is retired. Its replacement is `bro`, \
+             which mayfly does not have yet (MAYFLY-14); use claude, ccf, codex, cxf, cursor, \
+             opencode or copilot"
+        );
+    }
     let task: MayflyTask = serde_json::from_value(value).context("parse MayflyTask JSON")?;
     if task.task.trim().is_empty() {
         bail!("task string is empty");

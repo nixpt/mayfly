@@ -81,3 +81,26 @@ fn unsupported_read_only_is_refused_before_spawn() {
     assert_eq!(dirs, 0, "a refused task must not leave a hatch dir");
     let _ = std::fs::remove_dir_all(s);
 }
+
+#[test]
+fn retired_cece_harness_is_refused_with_a_hint() {
+    let s = state("cece");
+    for sub in ["validate", "hatch"] {
+        let out = run(
+            &s,
+            serde_json::json!({"task": "Read the file src/lib.rs and list its pub fns",
+                "done_when": {"type": "command", "run": "true"}, "harness": "cece"}),
+            sub,
+        );
+        assert!(!out.status.success(), "{sub} accepted cece");
+        let err = String::from_utf8_lossy(&out.stderr);
+        assert!(err.contains("`cece` harness was removed"), "{sub}: {err}");
+        assert!(err.contains("MAYFLY-14"), "{sub}: {err}");
+    }
+    let dirs = std::fs::read_dir(&s)
+        .unwrap()
+        .filter(|e| e.as_ref().unwrap().path().is_dir())
+        .count();
+    assert_eq!(dirs, 0, "a refused task must not leave a hatch dir");
+    let _ = std::fs::remove_dir_all(s);
+}
