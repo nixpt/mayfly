@@ -11,6 +11,12 @@ rather than written at the time.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-24
+
+- feat: MAYFLY-15: remove the retired cece harness (#17)
+
+
+
 ## [0.3.0] - 2026-10-26
 
 - Merge pull request #15 from nixpt/agent/vega/MAYFLY-16
